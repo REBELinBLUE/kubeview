@@ -96,7 +96,12 @@ export default {
   mounted() {
     this.apiGetNamespaces()
     .then(data => {
-      this.namespaces = data
+      this.namespaces = data.sort((a, b) => {
+        if (a.metadata.name > b.metadata.name) return 1;
+        if (a.metadata.name < b.metadata.name) return -1;
+
+        return 0
+      })
     })
 
     this.autoRefresh = 10
