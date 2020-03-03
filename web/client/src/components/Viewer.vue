@@ -256,6 +256,10 @@ export default {
 
             this.addNode(pv, 'PersistentVolume')
             this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`)
+
+            let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
+            this.addNode(sc, 'StorageClass')
+            this.addLink(`StorageClass_${sc.metadata.name}`, `PersistentVolume_${pv.metadata.name}`)
           }
 
           if(vol.configMap) {
@@ -390,6 +394,7 @@ export default {
         if(type == "ConfigMap")             icon = 'cm'
         if(type == "Secret")                icon = 'secret'
         if(type == "PersistentVolume")      icon = 'pv'
+        if(type == "StorageClass")          icon = 'sc'
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)

@@ -17,6 +17,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
+	storagev1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -89,6 +90,7 @@ type scrapeData struct {
 	Ingresses              []v1beta1.Ingress             `json:"ingresses"`
 	ConfigMaps             []apiv1.ConfigMap             `json:"configmaps"`
 	Secrets                []apiv1.Secret                `json:"secrets"`
+	StorageClasses         []storagev1.StorageClass      `json:"storageclasses"`
 }
 
 // GetNamespaces - Return list of all namespaces in cluster
@@ -124,6 +126,8 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 
 	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
 
+	storageclasses, err := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
+
 	if err != nil {
 		log.Println("### Kubernetes API error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -143,6 +147,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		Ingresses:              ingresses.Items,
 		ConfigMaps:             configmaps.Items,
 		Secrets:                secrets.Items,
+		StorageClasses:         storageclasses.Items,
 	}
 
 	scrapeResultJSON, _ := json.Marshal(scrapeResult)
