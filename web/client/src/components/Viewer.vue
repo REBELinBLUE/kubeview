@@ -251,6 +251,11 @@ export default {
             let pvc = this.apiData.persistentvolumeclaims.find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
             this.addNode(pvc, 'PersistentVolumeClaim')
             this.addLink(`PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, `Pod_${pod.metadata.name}`)
+
+            let pv = this.apiData.persistentvolumes.find(p => p.spec.claimRef.uid == pvc.metadata.uid);
+
+            this.addNode(pv, 'PersistentVolume')
+            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`)
           }
 
           if(vol.configMap) {
@@ -384,6 +389,7 @@ export default {
         if(type == "PersistentVolumeClaim") icon = 'pvc'
         if(type == "ConfigMap")             icon = 'cm'
         if(type == "Secret")                icon = 'secret'
+        if(type == "PersistentVolume")      icon = 'pv'
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
