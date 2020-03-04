@@ -343,6 +343,7 @@ export default {
         // Ingresses joined to Services by the rules
         for(let rule of ingress.spec.rules || []) {
           if(!rule.http.paths) continue
+
           for(let path of rule.http.paths || []) {
             let serviceName = path.backend.serviceName
 
