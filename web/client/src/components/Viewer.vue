@@ -196,18 +196,18 @@ export default {
         if(obj.status) {
           if(obj.status.replicas == 0 || obj.status.desiredNumberScheduled == 0) continue;
         }
-        
+
         // Add special "group" node for the set
         this.addGroup(type, obj.metadata.name)
+
         // Add set node and link it to the group
         this.addNode(obj, type, this.calcStatus(obj))
-        //this.addLink(`grp_ReplicaSet_${rs.metadata.name}`, rsId)
 
         // Find all owning deployments of this set (if any)
         for(let ownerRef of obj.metadata.ownerReferences || []) {
           // Skip owners that aren't deployments (like operators and custom objects)
           if(ownerRef.kind.toLowerCase() !== 'deployment') continue;
-          
+
           // Link set up to the deployment
           this.addLink(`${ownerRef.kind}_${ownerRef.name}`, objId, 'creates')
         }
@@ -233,12 +233,13 @@ export default {
       // Add pods
       for(let pod of this.apiData.pods) {
         if(!this.filterShowNode(pod)) continue
-        
+
         // Add pods to containing group (ReplicaSet, DaemonSet, StatefulSet) that 'owns' them
         if(pod.metadata.ownerReferences) {
           // Most pods have owning set (rs, ds, sts) so are in a group
           let owner = pod.metadata.ownerReferences[0];
           let groupId = `grp_${owner.kind}_${owner.name}`
+
           this.addNode(pod, 'Pod', this.calcStatus(pod), groupId)
         } else {
           // Naked pods don't go into groups
@@ -258,7 +259,7 @@ export default {
             if (!pv) continue;
 
             this.addNode(pv, 'PersistentVolume')
-            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'both')
+            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'creates')
 
             let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
             if (!sc) continue;
@@ -321,6 +322,7 @@ export default {
         for(let lb of svc.status.loadBalancer.ingress || []) {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip} }
+
           this.addNode(ipObj, 'IP')
           this.addLink(`Service_${svc.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
         }
@@ -336,6 +338,7 @@ export default {
         for(let lb of ingress.status.loadBalancer.ingress || []) {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip} }
+
           this.addNode(ipObj, 'IP')
           this.addLink(`Ingress_${ingress.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
         }
@@ -476,7 +479,6 @@ export default {
     cy.style().selector('.grp').style(require('../assets/styles/grp.json'));
     cy.style().selector('edge[direction="references"]').style(require('../assets/styles/references.json'));
     cy.style().selector('edge[direction="creates"]').style(require('../assets/styles/creates.json'));
-    cy.style().selector('edge[direction="both"]').style(require('../assets/styles/both.json'));
     cy.style().selector('node:selected').style({
       'border-width': '4',
       'border-color': 'rgb(0, 120, 215)'
