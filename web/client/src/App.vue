@@ -7,16 +7,16 @@
 
       <b-collapse is-nav id="nav_collapse">
         <b-navbar-nav>
-          <b-form-input 
-           @change="changeNS" 
+          <!-- <b-form-input
+           @change="changeNS"
            @blur="$event.target.value = namespace"
-           @focus="$event.target.value = '';" 
-           list="ns-list" ref="ns" :text="namespace" :value="namespace"></b-form-input>
+           @focus="$event.target.value = '';"
+           list="ns-list" ref="ns" :text="namespace" :value="namespace"></b-form-input> -->
 
-          <!-- <b-dropdown :text="namespace" variant="info">
+          <b-dropdown :text="namespace" variant="info">
             <b-dropdown-header>Pick namespace to show</b-dropdown-header>
             <b-dropdown-item @click="filter = ''; namespace = ns.metadata.name" v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</b-dropdown-item>
-          </b-dropdown>&nbsp;&nbsp; -->
+          </b-dropdown>&nbsp;&nbsp;
 
             <datalist id="ns-list">
               <option v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</option>
@@ -104,7 +104,7 @@ export default {
       })
     })
 
-    this.autoRefresh = 10
+    this.autoRefresh = 0
   }
 }
 </script>

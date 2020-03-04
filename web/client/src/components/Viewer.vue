@@ -209,7 +209,7 @@ export default {
           if(ownerRef.kind.toLowerCase() !== 'deployment') continue;
           
           // Link set up to the deployment
-          this.addLink(objId, `${ownerRef.kind}_${ownerRef.name}`)
+          this.addLink(`${ownerRef.kind}_${ownerRef.name}`, objId, 'creates')
         }
       }
     },
@@ -249,35 +249,38 @@ export default {
         for(let vol of pod.spec.volumes || []) {
           if(vol.persistentVolumeClaim) {
             let pvc = this.apiData.persistentvolumeclaims.find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
+            if (!pvc) continue;
+
             this.addNode(pvc, 'PersistentVolumeClaim')
-            this.addLink(`PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, `Pod_${pod.metadata.name}`)
+            this.addLink(`Pod_${pod.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'references')
 
             let pv = this.apiData.persistentvolumes.find(p => p.spec.claimRef.uid == pvc.metadata.uid);
+            if (!pv) continue;
 
             this.addNode(pv, 'PersistentVolume')
-            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`)
+            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'both')
 
             let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
+            if (!sc) continue;
+
             this.addNode(sc, 'StorageClass')
-            this.addLink(`StorageClass_${sc.metadata.name}`, `PersistentVolume_${pv.metadata.name}`)
+            this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
           }
 
           if(vol.configMap) {
             let configmap = this.apiData.configmaps.find(p => p.metadata.name == vol.configMap.name);
-
             if (!configmap) continue;
 
             this.addNode(configmap, 'ConfigMap')
-            this.addLink(`ConfigMap_${vol.configMap.name}`, `Pod_${pod.metadata.name}`)
+            this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${vol.configMap.name}`, 'references')
           }
 
           if(vol.secret) {
             let secret = this.apiData.secrets.find(p => p.metadata.name == vol.secret.secretName);
-
             if (!secret || secret.type == "kubernetes.io/service-account-token") continue;
 
             this.addNode(secret, 'Secret')
-            this.addLink(`Secret_${vol.secret.secretName}`, `Pod_${pod.metadata.name}`)
+            this.addLink(`Pod_${pod.metadata.name}`, `Secret_${vol.secret.secretName}`, 'references')
           }
         }
 
@@ -286,12 +289,11 @@ export default {
         // Find all owning sets of this pod
         for(let ownerRef of pod.metadata.ownerReferences || []) {
           // Link pod up to the owning set/group
-          this.addLink(`Pod_${pod.metadata.name}`, `${ownerRef.kind}_${ownerRef.name}`)
+          this.addLink(`${ownerRef.kind}_${ownerRef.name}`, `Pod_${pod.metadata.name}`, 'creates')
         }
       }
 
-      // Find all services, we pull in info from the endpoint with matching name
-      // Basicaly merge the service and endpoint objects together
+      // Find all services and endpoints
       for(let svc of this.apiData.services) {
         if(!this.filterShowNode(svc)) continue
         let serviceId = `Service_${svc.metadata.name}`
@@ -300,18 +302,17 @@ export default {
 
         // Find matching endpoint, and merge subsets into service 
         let ep = this.apiData.endpoints.find(ep => ep.metadata.name == svc.metadata.name)
-        if(ep) {
-          svc.subsets = ep.subsets
-        }
 
         this.addNode(svc, 'Service')
+        this.addNode(ep, 'Endpoints');
+        this.addLink(serviceId, `Endpoints_${ep.metadata.name}`, 'creates')
 
-        for(let subset of svc.subsets || []) {
+        for(let subset of ep.subsets || []) {
           let addresses = (subset.addresses || []).concat(subset.notReadyAddresses || [])
           for(let address of addresses || []) {
-            if(!address.targetRef) continue
-            if(address.targetRef.kind != "Pod") continue
-            this.addLink(serviceId, `Pod_${address.targetRef.name}`)
+            if(!address.targetRef || address.targetRef.kind != "Pod") continue
+
+            this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
           }        
         }
         
@@ -321,12 +322,12 @@ export default {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip} }
           this.addNode(ipObj, 'IP')
-          this.addLink(`IP_${ipObj.metadata.name}`, `Service_${svc.metadata.name}`)
+          this.addLink(`Service_${svc.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
         }
       }
 
       // Add Ingresses and link to Services  
-      for(var ingress of this.apiData.ingresses) {
+      for(let ingress of this.apiData.ingresses) {
         if(!this.filterShowNode(ingress)) continue
 
         this.addNode(ingress, 'Ingress')
@@ -336,7 +337,7 @@ export default {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip} }
           this.addNode(ipObj, 'IP')
-          this.addLink(`IP_${ipObj.metadata.name}`, `Ingress_${ingress.metadata.name}`)          
+          this.addLink(`Ingress_${ingress.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
         }
 
         // Ingresses joined to Services by the rules
@@ -344,16 +345,18 @@ export default {
           if(!rule.http.paths) continue
           for(let path of rule.http.paths || []) {
             let serviceName = path.backend.serviceName
-            //this.addLink(ingress.metadata.uid, `endpoint_${serviceName}`) 
-            this.addLink(`Ingress_${ingress.metadata.name}`, `Service_${serviceName}`) 
+
+            this.addLink(`Ingress_${ingress.metadata.name}`, `Service_${serviceName}`, 'references')
           }
         }
 
+        // Ingress tls secrets
         for(let tls of ingress.spec.tls || []) {
           let secret = this.apiData.secrets.find(p => p.metadata.name == tls.secretName);
+          if (!secret) continue;
 
           this.addNode(secret, 'Secret')
-          this.addLink(`Secret_${tls.secretName}`, `Ingress_${ingress.metadata.name}`)
+          this.addLink(`Ingress_${ingress.metadata.name}`, `Secret_${tls.secretName}`, 'references')
         }
       }
 
@@ -395,6 +398,7 @@ export default {
         if(type == "Secret")                icon = 'secret'
         if(type == "PersistentVolume")      icon = 'pv'
         if(type == "StorageClass")          icon = 'sc'
+        if(type == "Endpoints")             icon = 'ep'
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
@@ -414,11 +418,10 @@ export default {
     //
     // Link two nodes together
     //
-    addLink(sourceId, targetId) {
+    addLink(sourceId, targetId, direction) {
       try {
         // This is the syntax Cytoscape uses for creating links
-        // 
-        cy.add({ data: { id: `${sourceId}___${targetId}`, source: sourceId, target: targetId } })
+        cy.add({ data: { id: `${sourceId}___${targetId}`, source: sourceId, target: targetId, direction: direction } })
       } catch(e) {
         console.error(`### Unable to add link: ${sourceId} to ${targetId}`);
       }      
@@ -470,7 +473,9 @@ export default {
       return ele.data('status') ? `img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `img/res/${ele.data('icon')}.svg`
     })
     cy.style().selector('.grp').style(require('../assets/styles/grp.json'));
-    cy.style().selector('edge').style(require('../assets/styles/edge.json'));
+    cy.style().selector('edge[direction="references"]').style(require('../assets/styles/references.json'));
+    cy.style().selector('edge[direction="creates"]').style(require('../assets/styles/creates.json'));
+    cy.style().selector('edge[direction="both"]').style(require('../assets/styles/both.json'));
     cy.style().selector('node:selected').style({
       'border-width': '4',
       'border-color': 'rgb(0, 120, 215)'
@@ -499,7 +504,7 @@ export default {
       }
     })
 
-    // Inital load of everything ...
+    // Initial load of everything ...
     this.refreshData()
   }
 }

@@ -2,6 +2,7 @@
   <div class="infobox" @click="$emit('hideInfoBox')">
     <b-card :title="metadata.name" :sub-title="nodeData.type">
       <h6 class="text-muted" v-if="metadata.creationTimestamp">&bull; Created: {{ utilsDateFromISO8601(metadata.creationTimestamp).toLocaleString() }}</h6>
+
       <div v-if="metadata && metadata.labels">
         <h5>Labels</h5>
         <ul>
@@ -23,19 +24,8 @@
         </ul>
       </div>
 
-      <div v-if="specContainers">
-        <h5>Containers</h5>
-        <ul>
-          <div v-for="container of specContainers" :key="container.name">
-            <li><b>name:</b> {{container.name}}</li>
-            <li><b>image:</b> {{container.image}}</li>
-            <li v-for="(port, index) of container.ports" :key="index"><b>port:</b> {{port.containerPort}} ({{port.protocol}})</li>
-          </div>
-        </ul>
-      </div>    
-
       <div v-if="specInitContainers">
-        <h5>InitContainers</h5>
+        <h5>Init Containers</h5>
         <ul>
           <div v-for="container of specInitContainers" :key="container.name">
             <li><b>name:</b> {{container.name}}</li>
@@ -43,7 +33,24 @@
             <li v-for="(port, index) in container.ports" :key="index"><b>port:</b> {{port.containerPort}} ({{port.protocol}})</li>
           </div>
         </ul>
-      </div>     
+      </div>
+
+      <div v-if="specContainers">
+        <h5>Containers</h5>
+        <ul>
+          <div v-for="container of specContainers" :key="container.name">
+            <li><b>name:</b> {{container.name}}</li>
+            <li><b>image:</b> {{container.image}}</li>
+            <li v-if="container.ports && container.ports.length > 1">
+              <b>ports:</b>
+              <ul>
+                <li v-for="(port, index) of container.ports" :key="index"><b>{{port.name || "port"}}:</b> {{port.containerPort}} ({{port.protocol}})</li>
+              </ul>
+            </li>
+            <li v-if="container.ports && container.ports.length == 1"><b>{{container.ports[0].name ? container.ports[0].name + ' ' : ''}}port:</b> {{container.ports[0].containerPort}} ({{container.ports[0].protocol}})</li>
+          </div>
+        </ul>
+      </div>
 
       <div v-if="specPorts">
         <h5>Ports</h5>
@@ -65,9 +72,7 @@
       </div>   
 
       <b-button @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
-
     </b-card>
-    
   </div>
 </template>
 
@@ -157,8 +162,6 @@ export default {
     }  
   }
 }
-
-
 </script>
 
 <style scoped>

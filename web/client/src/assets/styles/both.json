@@ -1,0 +1,10 @@
+{
+  "target-arrow-shape": "triangle",
+  "source-arrow-shape": "triangle",
+  "curve-style":        "bezier",
+  "width":              6,
+  "line-color":         "#777",
+  "arrow-scale":        "1.5",
+  "target-arrow-color": "#777",
+  "source-arrow-color": "#777"
+}
