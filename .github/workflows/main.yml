@@ -21,8 +21,8 @@ jobs:
     - name: Build the Docker image
       run: docker build . --file ./build/Dockerfile --tag $dockerUser/$imageName:$imageTag
     
-    - name: Login to Dockerhub
-      run: docker login -u $dockerUser -p ${{ secrets.dockerPassword }} 
-      
-    - name: Push to Dockerhub
-      run: docker push $dockerUser/$imageName:$imageTag
+#    - name: Login to Dockerhub
+#      run: docker login -u $dockerUser -p ${{ secrets.dockerPassword }}
+#
+#    - name: Push to Dockerhub
+#      run: docker push $dockerUser/$imageName:$imageTag
