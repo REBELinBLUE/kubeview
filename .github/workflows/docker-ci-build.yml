@@ -7,8 +7,8 @@ on:
     branches: [master]
     
 env:
-  dockerUser: bencuk
-  imageName: kubeview
+  dockerUser: rebelinblue
+  imageName: kubeview-x86
   imageTag: latest
   
 jobs:
