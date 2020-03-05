@@ -1,5 +1,3 @@
 node_modules/
 cmd/server/server
-/server
 .env
-myvalues.yaml

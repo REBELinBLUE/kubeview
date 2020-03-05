@@ -29,6 +29,7 @@ func routeHealthCheck(resp http.ResponseWriter, req *http.Request) {
 		resp.WriteHeader(http.StatusNoContent)
 		return
 	}
+
 	resp.WriteHeader(http.StatusServiceUnavailable)
 }
 
@@ -70,6 +71,7 @@ func routeStatus(resp http.ResponseWriter, req *http.Request) {
 	statusJSON, err := json.Marshal(currentStatus)
 	if err != nil {
 		http.Error(resp, "Failed to get status", http.StatusInternalServerError)
+		return
 	}
 
 	resp.Header().Add("Content-Type", "application/json")
@@ -99,10 +101,14 @@ func routeGetNamespaces(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("### Kubernetes API error", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	namespacesJSON, _ := json.Marshal(namespaces.Items)
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Content-Type", "application/json")
+
 	w.Write(namespacesJSON)
 }
 
@@ -151,7 +157,9 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	scrapeResultJSON, _ := json.Marshal(scrapeResult)
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Content-Type", "application/json")
+
 	w.Write([]byte(scrapeResultJSON))
 }

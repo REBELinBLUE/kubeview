@@ -24,7 +24,7 @@ import (
 
 var (
 	healthy   = true                // Simple health flag
-	version   = "0.1.7"             // App version number, set at build time with -ldflags "-X main.version=1.2.3"
+	version   = "0.1.13"            // App version number, set at build time with -ldflags "-X main.version=1.2.3"
 	buildInfo = "No build details"  // Build details, set at build time with -ldflags "-X main.buildInfo='Foo bar'"
 	clientset *kubernetes.Clientset // Clientset is global because I don't care
 )
@@ -58,6 +58,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
+
 	log.Println("### Connected to:", config.Host)
 
 	// Create the clientset, which is our main interface to the Kubernetes API
@@ -68,6 +69,7 @@ func main() {
 
 	// Use gorilla/mux for routing
 	router := mux.NewRouter()
+
 	// Add middleware for logging and CORS
 	router.Use(starterMiddleware)
 
@@ -79,19 +81,24 @@ func main() {
 
 	staticDirectory := envhelper.GetEnvString("STATIC_DIR", "./frontend")
 	fileServer := http.FileServer(http.Dir(staticDirectory))
+
 	router.PathPrefix("/js").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/css").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/img").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/favicon.png").Handler(http.StripPrefix("/", fileServer))
+
 	// EVERYTHING else redirect to index.html
 	router.NotFoundHandler = http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		http.ServeFile(resp, req, staticDirectory+"/index.html")
 	})
+
 	log.Printf("### Serving static content from '%v'\n", staticDirectory)
 
 	// Start server
 	log.Printf("### Server listening on %v\n", serverPort)
+
 	err = http.ListenAndServe(fmt.Sprintf(":%d", serverPort), router)
+
 	if err != nil {
 		panic(err.Error())
 	}

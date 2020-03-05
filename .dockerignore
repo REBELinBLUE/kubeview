@@ -1,3 +1,23 @@
-**/node_modules/
+# Standard stuff
+Dockerfile*
+**/*Dockerfile*
+docker-compose*
+.dockerignore
+.git
+.gitignore
+README.md
+**/README.md
+**/LICENSE
+
+# Node stuff
+node_modules
+**/node_modules
+**/*.log
+
+# Dotenv secrets!
 **/.env
-**/server
+
+# Outputs, binaries etc
+**/bin/
+**/obj/
+**/dist/
