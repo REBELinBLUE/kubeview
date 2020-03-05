@@ -15,6 +15,7 @@ Currently displays:
 - Pods
 - ConfigMaps
 - Secrets
+- Endpoints
 - Services
 - Ingresses
 - LoadBalancer IPs
