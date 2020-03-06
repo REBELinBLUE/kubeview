@@ -50,7 +50,7 @@
 
         <b-button href="https://github.com/REBELinBLLUE/kubeview" target="_blank" variant="success">GitHub Project</b-button>
 
-        <p><br>Based on <a target="_blank" href="https://github.com/benc-uk/kubeview">KubeView by Ben Coleman</a></p>
+        <p id="credit">Based on <a target="_blank" href="https://github.com/benc-uk/kubeview">KubeView by Ben Coleman</a></p>
       </div>
     </b-modal>
   </div>
@@ -137,5 +137,8 @@ export default {
   .filterBox {
     font-size: 120%;
     width: 100px;
+  }
+  #credit {
+    margin: 15px auto 0px auto;
   }
 </style>
