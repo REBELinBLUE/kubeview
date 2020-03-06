@@ -28,7 +28,7 @@ Currently displays:
 - **Client SPA** - Vue.js single page app. All visualisation, mapping & logic done here
 - **API Server** - Scrapes Kubernetes API and presents it back out as a custom REST API. Also acts as HTTP serving host to the SPA. Written in Go
 
-# Repo Details
+## Repo Details
 
 This projects follows the 'Standard Go Project Layout' directory structure and naming conventions as described [here](https://github.com/golang-standards/project-layout)
 

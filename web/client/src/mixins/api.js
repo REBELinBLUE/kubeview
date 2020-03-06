@@ -12,7 +12,7 @@ export default {
         console.log(`### API Error! ${err.toString()}`);
       })
     },
-    
+
     apiGetNamespaces() {
       return fetch(`${API_ENDPOINT}/namespaces`)
       .then(resp => {

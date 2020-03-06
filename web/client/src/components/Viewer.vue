@@ -11,7 +11,6 @@
     <b-modal centered :title="fullInfoTitle" ref="fullInfoModal" ok-only scrollable size="lg" body-class="fullInfoBody">
       <pre>{{ fullInfoYaml }}</pre>
     </b-modal>
-
   </div>
 </template>
 
@@ -31,9 +30,9 @@ var cy
 export default {
   mixins: [ apiMixin, utils, VueTimers ],
 
-  components: { 
+  components: {
     'infobox': InfoBox,
-    'loading': Loading 
+    'loading': Loading
   },
 
   props: [ 'namespace', 'filter', 'autoRefresh', 'rootType' ],
@@ -54,8 +53,8 @@ export default {
   },
 
   watch: {
-    namespace() { 
-      this.refreshData(false) 
+    namespace() {
+      this.refreshData(false)
     },
 
     autoRefresh() {
@@ -78,7 +77,7 @@ export default {
     },
 
     //
-    // Called by the auto refresh timer, invokes a 'soft' refresh 
+    // Called by the auto refresh timer, invokes a 'soft' refresh
     //
     timerRefresh() {
       this.refreshData(true)
@@ -89,23 +88,23 @@ export default {
     //
     refreshData(soft = false) {
       // Soft refresh will not redraw/refresh nodes if no changes
-      if(!soft) { 
+      if(!soft) {
         cy.remove("*")
-        this.loading = true 
+        this.loading = true
       }
 
       this.apiGetDataForNamespace(this.namespace)
       .then(newData => {
         if(!newData) return
         let changed = true
-        if(soft) changed = this.detectChange(newData) 
+        if(soft) changed = this.detectChange(newData)
 
         this.apiData = newData
 
         if(changed) {
           this.typeIndexes = []
           cy.remove("*")
-          this.infoBoxData = false          
+          this.infoBoxData = false
           this.refreshNodes()
         }
 
@@ -122,7 +121,7 @@ export default {
       // Scan new data, match with old objects and check resourceVersion changes
       for(let type in data) {
         for(let obj of data[type]) {
-          // We have to skip these objects, the resourceVersion is constantly shifting 
+          // We have to skip these objects, the resourceVersion is constantly shifting
           if(obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-controller-manager') continue
           if(obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-scheduler') continue
 
@@ -140,16 +139,16 @@ export default {
             return true
           }
         }
-      }      
+      }
       return false
-    },    
+    },
 
     //
     // Some objects are colour coded by status
     //
     calcStatus(kubeObj) {
       let status = 'grey'
-      
+
       try {
         if(kubeObj.metadata.selfLink.startsWith(`/apis/apps/v1/namespaces/${this.namespace}/deployments/`)) {
           status = 'red'
@@ -166,7 +165,7 @@ export default {
         if(kubeObj.metadata.selfLink.startsWith(`/apis/apps/v1/namespaces/${this.namespace}/daemonsets/`)) {
           status = 'green'
           if(kubeObj.status.numberReady != kubeObj.status.desiredNumberScheduled) status = 'red'
-        } 
+        }
 
         if(kubeObj.metadata.selfLink.startsWith(`/api/v1/namespaces/${this.namespace}/pods/`)) {
           let cond = {}
@@ -177,7 +176,7 @@ export default {
           if(kubeObj.status.phase == 'Succeeded') status = 'green'
         }
       } catch(err) {
-        console.log(`### Problem with calcStatus for ${kubeObj.metadata.selfLink}`);  
+        console.log(`### Problem with calcStatus for ${kubeObj.metadata.selfLink}`);
       }
 
       return status
@@ -187,7 +186,7 @@ export default {
     // Convience method to add ReplicaSets / DaemonSets / StatefulSets
     //
     addSet(type, kubeObjs) {
-      
+
       for(let obj of kubeObjs) {
         if(!this.filterShowNode(obj)) continue
         let objId = `${type}_${obj.metadata.name}`
@@ -301,7 +300,7 @@ export default {
 
         if(svc.metadata.name == 'kubernetes') continue
 
-        // Find matching endpoint, and merge subsets into service 
+        // Find matching endpoint, and merge subsets into service
         let ep = this.apiData.endpoints.find(ep => ep.metadata.name == svc.metadata.name)
 
         this.addNode(svc, 'Service')
@@ -314,9 +313,9 @@ export default {
             if(!address.targetRef || address.targetRef.kind != "Pod") continue
 
             this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
-          }        
+          }
         }
-        
+
         // Find all external IPs of service, and add them
         // For this we create a pseudo-object
         for(let lb of svc.status.loadBalancer.ingress || []) {
@@ -328,7 +327,7 @@ export default {
         }
       }
 
-      // Add Ingresses and link to Services  
+      // Add Ingresses and link to Services
       for(let ingress of this.apiData.ingresses) {
         if(!this.filterShowNode(ingress)) continue
 
@@ -369,14 +368,14 @@ export default {
     },
 
     //
-    // Relayout nodes and display them 
+    // Relayout nodes and display them
     //
-    relayout() {      
+    relayout() {
       cy.resize()
-      
+
       // Use breadthfirst with Deployments or DaemonSets or StatefulSets at the root
       cy.layout({
-        name: 'breadthfirst', 
+        name: 'breadthfirst',
         roots: cy.nodes(`[type = "Deployment"],[type = "DaemonSet"],[type = "StatefulSet"]`),
         nodeDimensionsIncludeLabels: true,
         spacingFactor: 1
@@ -407,12 +406,12 @@ export default {
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
         if(type == "Pod") {
-          let podName = node.metadata.name.replace(node.metadata.generateName, '')        
+          let podName = node.metadata.name.replace(node.metadata.generateName, '')
           label = podName || node.status.podIP || ""
         }
 
         //console.log(`### Adding: ${type} -> ${node.metadata.name || node.metadata.selfLink}`);
-        cy.add({ data: { id: `${type}_${node.metadata.name}`, label: label, icon: icon, sourceObj: node, 
+        cy.add({ data: { id: `${type}_${node.metadata.name}`, label: label, icon: icon, sourceObj: node,
                          type: type, parent: groupId, status: status, name: node.metadata.name } })
       } catch(e) {
         console.error(`### Unable to add node: ${node.metadata.name || node.metadata.selfLink}`);
@@ -428,7 +427,7 @@ export default {
         cy.add({ data: { id: `${sourceId}___${targetId}`, source: sourceId, target: targetId, direction: direction } })
       } catch(e) {
         console.error(`### Unable to add link: ${sourceId} to ${targetId}`);
-      }      
+      }
     },
 
     //
@@ -439,7 +438,7 @@ export default {
         cy.add({ classes:['grp'], data: { id: `grp_${type}_${name}`, label: name, name: name} })
       } catch(e) {
         console.error(`### Unable to add group: ${name}`);
-      }      
+      }
     },
 
     //
@@ -462,8 +461,8 @@ export default {
   // Init component and set things up
   //
   mounted: function() {
-    // Create cytoscape, this bad boy is why we're here 
-    cy = cytoscape({ 
+    // Create cytoscape, this bad boy is why we're here
+    cy = cytoscape({
       container: this.$refs.mainview,
       wheelSensitivity: 0.1,
       maxZoom: 5,
@@ -473,7 +472,7 @@ export default {
 
     // Styling cytoscape to look good, stylesheets are held as JSON external
     cy.style().selector('node[icon]').style(require('../assets/styles/node.json'));
-    cy.style().selector('node[icon]').style("background-image", function(ele) { 
+    cy.style().selector('node[icon]').style("background-image", function(ele) {
       return ele.data('status') ? `img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `img/res/${ele.data('icon')}.svg`
     })
     cy.style().selector('.grp').style(require('../assets/styles/grp.json'));
@@ -492,10 +491,10 @@ export default {
         if(cy.$('node:selected').length > 1) {
           cy.$('node:selected')[0].unselect();
         }
-        
+
         if(evt.target.hasClass('grp'))
           return false
-        
+
         this.infoBoxData = evt.target.data()
       }
     })
@@ -540,5 +539,5 @@ export default {
   .slide-fade-enter, .slide-fade-leave-to {
     transform: translateY(20px);
     opacity: 0;
-  }  
+  }
 </style>

@@ -49,7 +49,7 @@ func main() {
 		log.Println("### Creating client in cluster mode")
 		config, err = rest.InClusterConfig()
 	} else {
-		var kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+		var kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config") // FIXME: Check for KUBECONFIG variable
 		log.Println("### Creating client with config file:", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
