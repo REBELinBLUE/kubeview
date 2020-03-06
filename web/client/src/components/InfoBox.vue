@@ -116,12 +116,12 @@ export default {
 
       // Fiddly ingress stuff
       if(this.utilsCheckNested(statusCopy, 'loadBalancer', 'ingress')) {
-        statusCopy.loadBalancerIPs = ''
+        statusCopy.loadBalancers = ''
         for (let ingress of statusCopy.loadBalancer.ingress || []) {
           if (ingress.ip) {
-            statusCopy.loadBalancerIPs += (ingress.ip.toString() + " ")
+            statusCopy.loadBalancers += (ingress.ip.toString() + " ")
           } else if (ingress.hostname) {
-            statusCopy.loadBalancerIPs += (ingress.hostname + " ")
+            statusCopy.loadBalancers += (ingress.hostname + " ")
           }
         }
       }

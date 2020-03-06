@@ -72,8 +72,17 @@ export default {
     // Display the detail info dialog with YAML version of the selected object
     //
     showFullInfo() {
-      this.fullInfoYaml = yaml.safeDump(this.infoBoxData.sourceObj)
-      this.fullInfoTitle = `${this.infoBoxData.type}: ${this.infoBoxData.sourceObj.metadata.name}`
+      let sourceCopy = {}
+      Object.assign(sourceCopy, this.infoBoxData.sourceObj);
+
+      // FIXME: This is a bad way to do it and should be done on the API level
+      if (sourceCopy.type && sourceCopy.type == "kubernetes.io/tls") {
+        sourceCopy.data['tls.key'] = '<REDACTED>'
+      }
+
+
+      this.fullInfoYaml = yaml.safeDump(sourceCopy)
+      this.fullInfoTitle = `${this.infoBoxData.type}: ${sourceCopy.metadata.name}`
 
       this.$refs.fullInfoModal.show()
     },
