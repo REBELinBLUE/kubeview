@@ -497,6 +497,10 @@ export default {
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
+        if (label != node.metadata.name) {
+            label += '…'
+        }
+
         if (type == "Pod") {
           let podName = node.metadata.name.replace(node.metadata.generateName, '')
           label = podName || node.status.podIP || ""
