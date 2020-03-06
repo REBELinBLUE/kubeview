@@ -144,6 +144,7 @@ export default {
           }
         }
       }
+
       // Scan old data and look for missing objects, which means they are deleted
       for (let type in this.apiData) {
         for (let obj of this.apiData[type]) {
@@ -291,7 +292,7 @@ export default {
 
         // Add PVCs linked to Pod
         for (let vol of pod.spec.volumes || []) {
-          if (vol.persistentVolumeClaim) {
+          if (vol.persistentVolumeClaim && this.apiData.persistentvolumes != null) {// FIXME: Fix the API to already return an empty array
             let pvc = this.apiData.persistentvolumeclaims.find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
             if (!pvc) {
               continue;
@@ -308,16 +309,18 @@ export default {
             this.addNode(pv, 'PersistentVolume')
             this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'creates')
 
-            let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
-            if (!sc) {
-              continue;
-            }
+            if (this.apiData.storageclasses != null) { // FIXME: Fix the API to already return an empty array
+              let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
+              if (!sc) {
+                  continue;
+              }
 
-            this.addNode(sc, 'StorageClass')
-            this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
+              this.addNode(sc, 'StorageClass')
+              this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
+            }
           }
 
-          if (vol.configMap) {
+          if (vol.configMap && this.apiData.configmaps != null ) { // FIXME: Fix the API to already return an empty array
             let configmap = this.apiData.configmaps.find(p => p.metadata.name == vol.configMap.name);
             if (!configmap) {
               continue;
@@ -327,7 +330,7 @@ export default {
             this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${vol.configMap.name}`, 'references')
           }
 
-          if (vol.secret) {
+          if (vol.secret && this.apiData.secrets != null ) {
             let secret = this.apiData.secrets.find(p => p.metadata.name == vol.secret.secretName);
             if (!secret || secret.type == "kubernetes.io/service-account-token") {
               continue;
@@ -385,8 +388,8 @@ export default {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
-          this.addNode(ipObj, 'IP')
-          this.addLink(`Service_${svc.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
+          this.addNode(ipObj, 'LoadBalancer')
+          this.addLink(`Service_${svc.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
         }
       }
 
@@ -403,8 +406,8 @@ export default {
           // Fake Kubernetes object to display the IP
           let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
-          this.addNode(ipObj, 'IP')
-          this.addLink(`Ingress_${ingress.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
+          this.addNode(ipObj, 'LoadBalancer')
+          this.addLink(`Ingress_${ingress.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
         }
 
         // Ingresses joined to Services by the rules
@@ -456,22 +459,24 @@ export default {
     //
     addNode(node, type, status = '', groupId = null) {
       try {
-        // FICXME: Clean this up
-        let icon = 'default'
-        if(type == "Deployment")            icon = 'deploy'
-        if(type == "ReplicaSet")            icon = 'rs'
-        if(type == "StatefulSet")           icon = 'sts'
-        if(type == "DaemonSet")             icon = 'ds'
-        if(type == "Pod")                   icon = 'pod'
-        if(type == "Service")               icon = 'svc'
-        if(type == "IP")                    icon = 'ip'
-        if(type == "Ingress")               icon = 'ing'
-        if(type == "PersistentVolumeClaim") icon = 'pvc'
-        if(type == "ConfigMap")             icon = 'cm'
-        if(type == "Secret")                icon = 'secret'
-        if(type == "PersistentVolume")      icon = 'pv'
-        if(type == "StorageClass")          icon = 'sc'
-        if(type == "Endpoints")             icon = 'ep'
+        const icons = {
+          Deployment:               'deploy',
+          ReplicaSet:               'rs',
+          StatefulSet:              'sts',
+          DaemonSet:                'ds',
+          Pod:                      'pod',
+          Service:                  'svc',
+          LoadBalancer:             'ip',
+          Ingress:                  'ing',
+          PersistentVolumeClaim:    'pvc',
+          ConfigMap:                'cm',
+          Secret:                   'secret',
+          PersistentVolume:         'pv',
+          StorageClass:             'sc',
+          Endpoints:                'ep',
+        }
+
+        const icon = icons[type] ? icons[type] : 'default';
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
@@ -481,8 +486,18 @@ export default {
         }
 
         //console.log(`### Adding: ${type} -> ${node.metadata.name || node.metadata.selfLink}`);
-        cy.add({ data: { id: `${type}_${node.metadata.name}`, label: label, icon: icon, sourceObj: node,
-                         type: type, parent: groupId, status: status, name: node.metadata.name } })
+        cy.add({
+          data: {
+            id: `${type}_${node.metadata.name}`,
+            label,
+            icon,
+            sourceObj: node,
+            type,
+            parent: groupId,
+            status,
+            name: node.metadata.name
+          }
+        })
       } catch(e) {
         console.error(`### Unable to add node: ${node.metadata.name || node.metadata.selfLink}`);
       }
@@ -494,7 +509,14 @@ export default {
     addLink(sourceId, targetId, direction) {
       try {
         // This is the syntax Cytoscape uses for creating links
-        cy.add({ data: { id: `${sourceId}___${targetId}`, source: sourceId, target: targetId, direction: direction } })
+        cy.add({
+          data: {
+            id: `${sourceId}___${targetId}`,
+            source: sourceId,
+            target: targetId,
+            direction
+          }
+        })
       } catch(e) {
         console.error(`### Unable to add link: ${sourceId} to ${targetId}`);
       }
@@ -505,7 +527,14 @@ export default {
     //
     addGroup(type, name) {
       try {
-        cy.add({ classes:['grp'], data: { id: `grp_${type}_${name}`, label: name, name: name} })
+        cy.add({
+          classes:['grp'],
+          data: {
+            id: `grp_${type}_${name}`,
+            label: name,
+            name
+          }
+        })
       } catch(e) {
         console.error(`### Unable to add group: ${name}`);
       }
@@ -552,9 +581,7 @@ export default {
 
     // Styling cytoscape to look good, stylesheets are held as JSON external
     cy.style().selector('node[icon]').style(require('../assets/styles/node.json'));
-    cy.style().selector('node[icon]').style("background-image", function(ele) {
-      return ele.data('status') ? `img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `img/res/${ele.data('icon')}.svg`
-    })
+    cy.style().selector('node[icon]').style("background-image", ele => ele.data('status') ? `img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `img/res/${ele.data('icon')}.svg`)
     cy.style().selector('.grp').style(require('../assets/styles/grp.json'));
     cy.style().selector('edge[direction="references"]').style(require('../assets/styles/references.json'));
     cy.style().selector('edge[direction="creates"]').style(require('../assets/styles/creates.json'));

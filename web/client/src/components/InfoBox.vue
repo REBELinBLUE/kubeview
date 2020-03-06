@@ -59,7 +59,7 @@
             <li><b>{{port.name || "port"}}:</b> {{port.port}} &rarr; {{port.targetPort}} ({{port.protocol}})</li>
           </div>
         </ul>
-      </div>     
+      </div>
 
       <div v-if="subsets">
         <h5>Endpoints</h5>
@@ -69,7 +69,7 @@
             <li v-for="address of subset.notReadyAddresses" :key="address.ip"><b>{{address.ip}} (Not Ready)</b></li>
           </div>
         </ul>
-      </div>   
+      </div>
 
       <b-button @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
     </b-card>
@@ -103,12 +103,12 @@ export default {
 
       // Conditions contains a LOT of info, this is probably the most important
       if (statusCopy.conditions) {
-        let ready = statusCopy.conditions.find(c => c.type == 'Ready') 
+        let ready = statusCopy.conditions.find(c => c.type == 'Ready')
         if (ready) {
           statusCopy.ready = ready.status
         }
 
-        let available = statusCopy.conditions.find(c => c.type == 'Available') 
+        let available = statusCopy.conditions.find(c => c.type == 'Available')
         if (available) {
           statusCopy.available = available.status
         }
@@ -161,8 +161,7 @@ export default {
         return false
       }
 
-      let array = this.nodeData.sourceObj.spec.containers
-      return array
+      return this.nodeData.sourceObj.spec.containers
     },
 
     specInitContainers() {
@@ -170,27 +169,24 @@ export default {
         return false
       }
 
-      let array = this.nodeData.sourceObj.spec.initContainers
-      return array
-    },  
+      return this.nodeData.sourceObj.spec.initContainers
+    },
 
     specPorts() {
       if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'ports')) {
         return false
       }
 
-      let array = this.nodeData.sourceObj.spec.ports
-      return array
-    },    
+      return this.nodeData.sourceObj.spec.ports
+    },
 
     subsets() {
       if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'subsets')) {
         return false
       }
 
-      let array = this.nodeData.sourceObj.subsets
-      return array
-    }  
+      return this.nodeData.sourceObj.subsets
+    }
   }
 }
 </script>
