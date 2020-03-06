@@ -141,8 +141,8 @@ export default {
       for (let type in data) {
         for (let obj of data[type]) {
           // We have to skip these objects, the resourceVersion is constantly shifting
-          if(obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-controller-manager' ||
-             obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-scheduler'
+          if (obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-controller-manager' ||
+              obj.metadata.selfLink == '/api/v1/namespaces/kube-system/endpoints/kube-scheduler'
           ) {
             continue
           }
@@ -301,8 +301,8 @@ export default {
 
         // Add PVCs linked to Pod
         for (let vol of pod.spec.volumes || []) {
-          if (vol.persistentVolumeClaim && this.apiData.persistentvolumes != null) {// FIXME: Fix the API to already return an empty array
-            let pvc = this.apiData.persistentvolumeclaims.find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
+          if (vol.persistentVolumeClaim) {
+            let pvc = (this.apiData.persistentvolumeclaims || []).find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
             if (!pvc) {
               continue;
             }
@@ -310,7 +310,7 @@ export default {
             this.addNode(pvc, 'PersistentVolumeClaim')
             this.addLink(`Pod_${pod.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'references')
 
-            let pv = this.apiData.persistentvolumes.find(p => p.spec.claimRef.uid == pvc.metadata.uid);
+            let pv = (this.apiData.persistentvolumes || []).find(p => p.spec.claimRef.uid == pvc.metadata.uid);
             if (!pv) {
               continue;
             }
@@ -318,19 +318,18 @@ export default {
             this.addNode(pv, 'PersistentVolume')
             this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'creates')
 
-            if (this.apiData.storageclasses != null) { // FIXME: Fix the API to already return an empty array
-              let sc = this.apiData.storageclasses.find(p => p.metadata.name == pv.spec.storageClassName)
-              if (!sc) {
-                  continue;
-              }
-
-              this.addNode(sc, 'StorageClass')
-              this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
+            let sc = (this.apiData.storageclasses || []).find(p => p.metadata.name == pv.spec.storageClassName)
+            if (!sc) {
+                continue;
             }
+
+            this.addNode(sc, 'StorageClass')
+            this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
+
           }
 
-          if (vol.configMap && this.apiData.configmaps != null ) { // FIXME: Fix the API to already return an empty array
-            let configmap = this.apiData.configmaps.find(p => p.metadata.name == vol.configMap.name);
+          if (vol.configMap) {
+            let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == vol.configMap.name);
             if (!configmap) {
               continue;
             }
@@ -339,9 +338,9 @@ export default {
             this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${vol.configMap.name}`, 'references')
           }
 
-          if (vol.secret && this.apiData.secrets != null ) {
-            let secret = this.apiData.secrets.find(p => p.metadata.name == vol.secret.secretName);
-            if (!secret || secret.type == "kubernetes.io/service-account-token") {
+          if (vol.secret) {
+            let secret = (this.apiData.secrets || []).find(p => p.metadata.name == vol.secret.secretName);
+            if (!secret || secret.type == "kubernetes.io/service-account-token") { // FIXME: What about showing this if it isn't default?
               continue;
             }
 
@@ -379,22 +378,21 @@ export default {
         this.addLink(serviceId, `Endpoints_${ep.metadata.name}`, 'creates')
 
         for (let subset of ep.subsets || []) {
-          let addresses = (subset.addresses || []).concat(subset.notReadyAddresses || [])
+          let addresses = (subset.addresses || [])
 
           for (let address of addresses || []) {
             if (!address.targetRef || address.targetRef.kind != "Pod") {
               continue
             }
 
-            // FIXME: Only add link for ready addresses?
             this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
           }
         }
 
-        // Find all external IPs of service, and add them
+        // Find all external addresses of service, and add them
         // For this we create a pseudo-object
         for (let lb of svc.status.loadBalancer.ingress || []) {
-          // Fake Kubernetes object to display the IP
+          // Fake Kubernetes object to display the LoadBalancers
           let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
           this.addNode(ipObj, 'LoadBalancer')
@@ -410,9 +408,9 @@ export default {
 
         this.addNode(ingress, 'Ingress')
 
-        // Find all external IPs of ingresses, and add them
+        // Find all external addresses of ingresses, and add them
         for (let lb of ingress.status.loadBalancer.ingress || []) {
-          // Fake Kubernetes object to display the IP
+          // Fake Kubernetes object to display the LoadBalancers
           let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
           this.addNode(ipObj, 'LoadBalancer')
@@ -508,6 +506,10 @@ export default {
           }
         })
       } catch(e) {
+        if (e.message && e.message.includes('Can not create second element')) {
+            return
+        }
+
         console.error(`### Unable to add node: ${node.metadata.name || node.metadata.selfLink}`);
       }
     },
@@ -527,6 +529,10 @@ export default {
           }
         })
       } catch(e) {
+        if (e.message && e.message.includes('Can not create second element')) {
+            return
+        }
+
         console.error(`### Unable to add link: ${sourceId} to ${targetId}`);
       }
     },
@@ -545,6 +551,10 @@ export default {
           }
         })
       } catch(e) {
+        if (e.message && e.message.includes('Can not create second element')) {
+            return
+        }
+
         console.error(`### Unable to add group: ${name}`);
       }
     },

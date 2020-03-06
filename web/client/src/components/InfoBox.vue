@@ -115,7 +115,7 @@ export default {
       }
 
       // Fiddly ingress stuff
-      if(this.utilsCheckNested(statusCopy, 'loadBalancer', 'ingress')) {
+      if (this.utilsCheckNested(statusCopy, 'loadBalancer', 'ingress')) { // FIXME: What about services?
         statusCopy.loadBalancers = ''
         for (let ingress of statusCopy.loadBalancer.ingress || []) {
           if (ingress.ip) {

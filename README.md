@@ -18,7 +18,7 @@ Currently displays:
 - Endpoints
 - Services
 - Ingresses
-- LoadBalancer IPs
+- LoadBalancer IPs or Hostnames
 - PersistentVolumeClaims
 - PersistentVolumes
 - StorageClasses
