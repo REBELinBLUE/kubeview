@@ -71,7 +71,9 @@
         </ul>
       </div>
 
-      <b-button @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
+      <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
+
+      <p v-if="!kubeResource">This represents the real physical Load Balancer rather than a Kubernetes resource</p>
     </b-card>
   </div>
 </template>
@@ -85,6 +87,11 @@ export default {
   mixins: [ utils ],
 
   computed: {
+    kubeResource() {
+      // Do not show the button for LoadBalancer as it is not a kubernetes resource
+      return this.nodeData.type != 'LoadBalancer';
+    },
+
     metadata() {
       if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'metadata')) {
         return false
@@ -203,7 +210,7 @@ export default {
     padding: 0px !important;
     word-wrap: break-word;
     font-size: 105%;
-    max-width: 90%;
+    max-width: 40%;
     overflow: hidden;
   }
   li {
