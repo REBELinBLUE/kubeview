@@ -108,15 +108,11 @@ export default {
         })
       })
       .then(() => {
-          // FIXME: There has to be a cleaner way to do this, set the default namespace to the first namespace if default is not accessible
-          let defaultNs = this.namespaces[0].metadata.name;
-          this.namespaces.forEach((ns) => {
-              if (ns.metadata.name == 'default') {
-                  defaultNs = 'default';
-              }
-          })
+        // Set the default namespace to the first namespace if default is not accessible
+        const defaultNamespaces = this.namespaces.filter(({ metadata }) => metadata.name === 'default')
+        const defaultNs = defaultNamespaces.length ? defaultNamespaces[0].metadata.name : this.namespaces[0].metadata.name
 
-          this.namespace = defaultNs
+        this.namespace = defaultNs
       })
   }
 }

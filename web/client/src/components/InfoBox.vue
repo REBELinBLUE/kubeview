@@ -71,9 +71,9 @@
         </ul>
       </div>
 
-      <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
-
       <p v-if="!kubeResource">This represents the real physical Load Balancer rather than a Kubernetes resource</p>
+
+      <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
     </b-card>
   </div>
 </template>
@@ -211,7 +211,8 @@ export default {
     word-wrap: break-word;
     font-size: 105%;
     max-width: 40%;
-    overflow: hidden;
+    max-height: 75%;
+    overflow-y: scroll;
   }
   li {
     font-size: 90%;

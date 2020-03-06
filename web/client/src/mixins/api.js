@@ -20,6 +20,8 @@ export default {
 
           err.text().then(message => {
             console.log(`### API Error! ${message}`);
+          }).catch(err => {
+              console.error(err)
           })
         })
     },

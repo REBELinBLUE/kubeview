@@ -76,10 +76,26 @@ export default {
       Object.assign(sourceCopy, this.infoBoxData.sourceObj);
 
       // FIXME: This is a bad way to do it and should be done on the API level
-      if (sourceCopy.type && sourceCopy.type == "kubernetes.io/tls") {
-        sourceCopy.data['tls.key'] = '<REDACTED>'
+      if (sourceCopy.type) {
+        if (sourceCopy.type == "kubernetes.io/tls") {
+          sourceCopy.data['tls.key'] = '<REDACTED>'
+        } else if (sourceCopy.type == "Opaque") { // FIXME: Think of a better way to do this
+          if (sourceCopy.data.role_id) {
+            sourceCopy.data.role_id = '<REDACTED>'
+          }
+
+          if (sourceCopy.data.secret_id) {
+            sourceCopy.data.secret_id = '<REDACTED>'
+          }
+        }
       }
 
+      if (sourceCopy.metadata.annotations) {
+        delete sourceCopy.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']
+        if (Object.keys(sourceCopy.metadata.annotations).length == 0) {
+          delete sourceCopy.metadata.annotations
+        }
+      }
 
       this.fullInfoYaml = yaml.safeDump(sourceCopy)
       this.fullInfoTitle = `${this.infoBoxData.type}: ${sourceCopy.metadata.name}`
@@ -98,7 +114,6 @@ export default {
     // Called to reload data from the API and display it
     //
     refreshData(soft = false) {
-
       if (!this.namespace) {
         return
       }
@@ -136,6 +151,8 @@ export default {
           err.text().then(message => {
             this.loading = false
             alert(message)
+          }).catch(err => {
+            console.error(err);
           })
         })
     },
@@ -307,6 +324,58 @@ export default {
         } else {
           // Naked pods don't go into groups
           this.addNode(pod, 'Pod', this.calcStatus(pod))
+        }
+
+        // FIXME: Refactor, lots of duplication
+        const containers = (pod.spec.initContainers || []).concat(pod.spec.containers || []);
+        for (let container of containers) {
+          for (let envFrom of container.envFrom || []) {
+            if (envFrom.configMapRef) {
+              let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == envFrom.configMapRef.name);
+              if (!configmap) {
+                continue;
+              }
+
+              this.addNode(configmap, 'ConfigMap')
+              this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${envFrom.configMapRef.name}`, 'references')
+            }
+
+            if (envFrom.secretRef) {
+              let secret = (this.apiData.secrets || []).find(p => p.metadata.name == envFrom.secretRef.name);
+              if (!secret) {
+                continue;
+              }
+
+              this.addNode(secret, 'Secret')
+              this.addLink(`Pod_${pod.metadata.name}`, `Secret_${envFrom.secretRef.name}`, 'references')
+            }
+          }
+
+          for (let env of container.env || []) {
+            if (!env.valueFrom) {
+              continue;
+            }
+
+            if (env.valueFrom.configMapKeyRef) {
+              let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == env.valueFrom.configMapKeyRef.name);
+              if (!configmap) {
+                continue;
+              }
+
+              this.addNode(configmap, 'ConfigMap')
+              this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${env.valueFrom.configMapKeyRef.name}`, 'references')
+            }
+
+            if (env.valueFrom.secretKeyRef) {
+              let secret = (this.apiData.secrets || []).find(p => p.metadata.name == env.valueFrom.secretKeyRef.name);
+              if (!secret) {
+                continue;
+              }
+
+              this.addNode(secret, 'Secret')
+              this.addLink(`Pod_${pod.metadata.name}`, `Secret_${env.valueFrom.secretKeyRef.name}`, 'references')
+            }
+          }
         }
 
         // Add PVCs linked to Pod
