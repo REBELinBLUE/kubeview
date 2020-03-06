@@ -7,12 +7,6 @@
 
       <b-collapse is-nav id="nav_collapse">
         <b-navbar-nav>
-          <!-- <b-form-input
-           @change="changeNS"
-           @blur="$event.target.value = namespace"
-           @focus="$event.target.value = '';"
-           list="ns-list" ref="ns" :text="namespace" :value="namespace"></b-form-input> -->
-
           <b-dropdown :text="namespace" variant="info">
             <b-dropdown-header>Pick namespace to show</b-dropdown-header>
             <b-dropdown-item @click="filter = ''; namespace = ns.metadata.name" v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</b-dropdown-item>
@@ -31,7 +25,6 @@
         <b-navbar-nav>
           <b-dropdown split :text="autoRefreshText" split-variant="light" variant="info">
             <b-dropdown-item @click="autoRefresh=0">Off</b-dropdown-item>
-            <!-- <b-dropdown-item @click="autoRefresh=2">2 secs</b-dropdown-item> -->
             <b-dropdown-item @click="autoRefresh=5">5 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=10">10 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=15">15 secs</b-dropdown-item>
@@ -81,7 +74,7 @@ export default {
       namespaces: [],
       filter: "",
       version: require('../package.json').version,
-      autoRefresh: -1
+      autoRefresh: 0
     }
   },
 
@@ -104,7 +97,7 @@ export default {
       })
     })
 
-    this.autoRefresh = 0
+    // FIXME: If default isn't in the list, set this.namespace to the first option
   }
 }
 </script>

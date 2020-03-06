@@ -312,6 +312,7 @@ export default {
           for(let address of addresses || []) {
             if(!address.targetRef || address.targetRef.kind != "Pod") continue
 
+            // FIXME: Only add link for ready addresses?
             this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
           }
         }
@@ -320,7 +321,7 @@ export default {
         // For this we create a pseudo-object
         for(let lb of svc.status.loadBalancer.ingress || []) {
           // Fake Kubernetes object to display the IP
-          let ipObj = { metadata: { name: lb.ip} }
+          let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
           this.addNode(ipObj, 'IP')
           this.addLink(`Service_${svc.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
@@ -336,7 +337,7 @@ export default {
         // Find all external IPs of ingresses, and add them
         for(let lb of ingress.status.loadBalancer.ingress || []) {
           // Fake Kubernetes object to display the IP
-          let ipObj = { metadata: { name: lb.ip} }
+          let ipObj = { metadata: { name: lb.ip || lb.hostname } }
 
           this.addNode(ipObj, 'IP')
           this.addLink(`Ingress_${ingress.metadata.name}`, `IP_${ipObj.metadata.name}`, 'references')
