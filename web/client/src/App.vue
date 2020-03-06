@@ -31,7 +31,7 @@
             <b-dropdown-item @click="autoRefresh=30">30 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=60">60 secs</b-dropdown-item>
           </b-dropdown>
-        </b-navbar-nav>                  
+        </b-navbar-nav>
       </b-collapse>
 
       <b-navbar-nav class="ml-auto">
@@ -64,13 +64,13 @@ export default {
 
   computed: {
     autoRefreshText() {
-      return this.autoRefresh ? `Auto Refresh: ${this.autoRefresh} secs` : "Auto Refresh: Off" 
+      return this.autoRefresh ? `Auto Refresh: ${this.autoRefresh} secs` : "Auto Refresh: Off"
     }
   },
 
   data() {
     return {
-      namespace: "default",
+      namespace: "",
       namespaces: [],
       filter: "",
       version: require('../package.json').version,
@@ -80,7 +80,7 @@ export default {
 
   methods: {
     changeNS: function(evt) {
-      this.filter = ''; 
+      this.filter = '';
       this.namespace = evt;
       this.$refs.ns.blur();
     }
@@ -102,8 +102,17 @@ export default {
           return 0
         })
       })
+      .then(() => {
+          // FIXME: There has to be a cleaner way to do this, set the default namespace to the first namespace if default is not accessible
+          let defaultNs = this.namespaces[0].metadata.name;
+          this.namespaces.forEach((ns) => {
+              if (ns.metadata.name == 'default') {
+                  defaultNs = 'default';
+              }
+          })
 
-    // FIXME: If default isn't in the list, set this.namespace to the first option
+          this.namespace = defaultNs
+      })
   }
 }
 </script>

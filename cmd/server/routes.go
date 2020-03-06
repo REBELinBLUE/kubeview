@@ -98,9 +98,10 @@ type scrapeData struct {
 // GetNamespaces - Return list of all namespaces in cluster
 func routeGetNamespaces(w http.ResponseWriter, r *http.Request) {
 	namespaces, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+
 	if err != nil {
 		log.Println("### Kubernetes API error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
@@ -117,28 +118,57 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	namespace := params["ns"]
 
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
-	services, err := clientset.CoreV1().Services(namespace).List(metav1.ListOptions{})
-	endpoints, err := clientset.CoreV1().Endpoints(namespace).List(metav1.ListOptions{})
-	pvs, err := clientset.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
-	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
-	configmaps, err := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
-	secrets, err := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	// If deployments, daemonsets, replicasets, statefulsets or pods can't be listed there is not much point continuing
 
 	deployments, err := clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
-	daemonsets, err := clientset.AppsV1().DaemonSets(namespace).List(metav1.ListOptions{})
-	replicasets, err := clientset.AppsV1().ReplicaSets(namespace).List(metav1.ListOptions{})
-	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
-
-	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
-
-	storageclasses, err := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
 
 	if err != nil {
 		log.Println("### Kubernetes API error", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
+
+	daemonsets, err := clientset.AppsV1().DaemonSets(namespace).List(metav1.ListOptions{})
+
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	replicasets, err := clientset.AppsV1().ReplicaSets(namespace).List(metav1.ListOptions{})
+
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	// If the remaining resource types can't be listed it doesn't matter, handle it on the frontend
+	services, _ := clientset.CoreV1().Services(namespace).List(metav1.ListOptions{})
+	endpoints, _ := clientset.CoreV1().Endpoints(namespace).List(metav1.ListOptions{})
+	pvs, _ := clientset.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
+	pvcs, _ := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
+	configmaps, _ := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+	secrets, _ := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	ingresses, _ := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
+	storageclasses, _ := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
 
 	scrapeResult := scrapeData{
 		Pods:                   pods.Items,

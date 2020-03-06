@@ -43,7 +43,7 @@ export default {
       infoBoxData: null,
       fullInfoYaml: null,
       fullInfoTitle: "",
-      loading: false
+      loading: false,
     }
   },
 
@@ -98,6 +98,11 @@ export default {
     // Called to reload data from the API and display it
     //
     refreshData(soft = false) {
+
+      if (!this.namespace) {
+        return
+      }
+
       // Soft refresh will not redraw/refresh nodes if no changes
       if (!soft) {
         cy.remove("*")
@@ -126,6 +131,12 @@ export default {
           }
 
           this.loading = false
+        })
+        .catch(err => {
+          err.text().then(message => {
+            this.loading = false
+            alert(message)
+          })
         })
     },
 
@@ -229,7 +240,6 @@ export default {
     // Convience method to add ReplicaSets / DaemonSets / StatefulSets
     //
     addSet(type, kubeObjs) {
-
       for (let obj of kubeObjs) {
         if (!this.filterShowNode(obj)) {
           continue
