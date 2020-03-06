@@ -86,29 +86,43 @@ export default {
 
   computed: {
     metadata() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'metadata')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'metadata')) {
+        return false
+      }
 
       return this.nodeData.sourceObj.metadata
     },
 
     status() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'status')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'status')) {
+        return false
+      }
+
       let statusCopy = {}
       Object.assign(statusCopy, this.nodeData.sourceObj.status);
 
       // Conditions contains a LOT of info, this is probably the most important
-      if(statusCopy.conditions) {
+      if (statusCopy.conditions) {
         let ready = statusCopy.conditions.find(c => c.type == 'Ready') 
-        if(ready) statusCopy.ready = ready.status
+        if (ready) {
+          statusCopy.ready = ready.status
+        }
+
         let available = statusCopy.conditions.find(c => c.type == 'Available') 
-        if(available) statusCopy.available = available.status
+        if (available) {
+          statusCopy.available = available.status
+        }
       }
 
       // Fiddly ingress stuff
       if(this.utilsCheckNested(statusCopy, 'loadBalancer', 'ingress')) {
         statusCopy.loadBalancerIPs = ''
-        for(let ingress of statusCopy.loadBalancer.ingress) {
-          statusCopy.loadBalancerIPs += (ingress.ip.toString() + " ")
+        for (let ingress of statusCopy.loadBalancer.ingress || []) {
+          if (ingress.ip) {
+            statusCopy.loadBalancerIPs += (ingress.ip.toString() + " ")
+          } else if (ingress.hostname) {
+            statusCopy.loadBalancerIPs += (ingress.hostname + " ")
+          }
         }
       }
 
@@ -118,44 +132,61 @@ export default {
       delete statusCopy.conditions
       delete statusCopy.qosClass
 
-      if(Object.keys(statusCopy).length <= 0) return false
+      if (Object.keys(statusCopy).length <= 0) {
+        return false
+      }
+
       return statusCopy
     },
 
     annotations() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'metadata', 'annotations')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'metadata', 'annotations')) {
+        return false
+      }
+
       let annoCopy = {}
       Object.assign(annoCopy, this.metadata.annotations);
 
       delete annoCopy['kubectl.kubernetes.io/last-applied-configuration']
 
-      if(Object.keys(annoCopy).length <= 0) return false
+      if (Object.keys(annoCopy).length <= 0) {
+        return false
+      }
+
       return annoCopy
     },
 
     specContainers() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'containers')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'containers')) {
+        return false
+      }
 
       let array = this.nodeData.sourceObj.spec.containers
       return array
     },
 
     specInitContainers() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'initContainers')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'initContainers')) {
+        return false
+      }
 
       let array = this.nodeData.sourceObj.spec.initContainers
       return array
     },  
 
     specPorts() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'ports')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'spec', 'ports')) {
+        return false
+      }
 
       let array = this.nodeData.sourceObj.spec.ports
       return array
     },    
 
     subsets() {
-      if(!this.utilsCheckNested(this.nodeData, 'sourceObj', 'subsets')) return false
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'subsets')) {
+        return false
+      }
 
       let array = this.nodeData.sourceObj.subsets
       return array
