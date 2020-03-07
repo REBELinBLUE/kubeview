@@ -93,6 +93,7 @@ type scrapeData struct {
 	ConfigMaps             []apiv1.ConfigMap             `json:"configmaps"`
 	Secrets                []apiv1.Secret                `json:"secrets"`
 	StorageClasses         []storagev1.StorageClass      `json:"storageclasses"`
+	ServiceAccounts        []apiv1.ServiceAccount        `json:"serviceaccounts"`
 }
 
 // GetNamespaces - Return list of all namespaces in cluster
@@ -169,6 +170,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	secrets, _ := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
 	ingresses, _ := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
 	storageclasses, _ := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	serviceaccounts, _ := clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
 
 	scrapeResult := scrapeData{
 		Pods:                   pods.Items,
@@ -184,6 +186,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		ConfigMaps:             configmaps.Items,
 		Secrets:                secrets.Items,
 		StorageClasses:         storageclasses.Items,
+		ServiceAccounts:        serviceaccounts.Items,
 	}
 
 	scrapeResultJSON, _ := json.Marshal(scrapeResult)

@@ -110,8 +110,10 @@ func main() {
 //
 func starterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
+		var lastPos int = strings.LastIndex(req.RemoteAddr, ":")
+
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		log.Println("###", strings.Split(req.RemoteAddr, ":")[0], req.Method, req.RequestURI)
+		log.Println("###", req.RemoteAddr[0:lastPos], req.Method, req.RequestURI)
 		next.ServeHTTP(resp, req)
 	})
 }

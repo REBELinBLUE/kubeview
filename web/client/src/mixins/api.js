@@ -1,5 +1,5 @@
 const API_ENDPOINT = process.env.VUE_APP_API_ENDPOINT
-const FILTERED_NS = ['prod', 'qa1', 'qa2', 'qa3', 'qa4', 'stage1', 'stage2', 'stage3', 'demo', 'integrity', 'uat', 'tools', 'devops']
+const FILTERED_NS = [] //['prod', 'qa1', 'qa2', 'qa3', 'qa4', 'stage1', 'stage2', 'stage3', 'demo', 'integrity', 'uat', 'tools', 'devops']
 
 export default {
   methods: {

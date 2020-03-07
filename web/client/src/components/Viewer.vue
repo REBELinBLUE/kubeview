@@ -399,7 +399,7 @@ export default {
 
             let sc = (this.apiData.storageclasses || []).find(p => p.metadata.name == pv.spec.storageClassName)
             if (!sc) {
-                continue;
+              continue;
             }
 
             this.addNode(sc, 'StorageClass')
@@ -419,7 +419,20 @@ export default {
 
           if (vol.secret) {
             let secret = (this.apiData.secrets || []).find(p => p.metadata.name == vol.secret.secretName);
-            if (!secret || secret.type == "kubernetes.io/service-account-token") { // FIXME: What about showing this if it isn't default?
+            if (!secret) {
+              continue;
+            }
+
+            if (secret.type == "kubernetes.io/service-account-token") {
+              const serviceAccount = this.apiData.serviceaccounts.find(s => s.metadata.name == pod.spec.serviceAccount |  s.metadata.name == pod.spec.serviceAccountName);
+              if (serviceAccount && serviceAccount.metadata.name != "default") {
+                this.addNode(serviceAccount, 'ServiceAccount')
+                this.addNode(secret, 'Secret')
+
+                this.addLink(`Pod_${pod.metadata.name}`, `Secret_${vol.secret.secretName}`, 'references')
+                this.addLink(`Pod_${pod.metadata.name}`, `ServiceAccount_${serviceAccount.metadata.name}`, 'references')
+                this.addLink(`ServiceAccount_${serviceAccount.metadata.name}`, `Secret_${vol.secret.secretName}`, 'creates')
+              }
               continue;
             }
 
@@ -428,12 +441,16 @@ export default {
           }
         }
 
-        // FIXME: What about env linked secrets and configMaps
-
         // Find all owning sets of this pod
         for (let ownerRef of pod.metadata.ownerReferences || []) {
           // Link pod up to the owning set/group
           this.addLink(`${ownerRef.kind}_${ownerRef.name}`, `Pod_${pod.metadata.name}`, 'creates')
+        }
+
+        const serviceAccount = this.apiData.serviceaccounts.find(s => s.metadata.name == pod.spec.serviceAccount || s.metadata.name == pod.spec.serviceAccountName);
+        if (serviceAccount && serviceAccount.metadata.name != 'default') {
+          this.addNode(serviceAccount, 'ServiceAccount')
+          this.addLink(`Pod_${pod.metadata.name}`, `ServiceAccount_${serviceAccount.metadata.name}`, 'references')
         }
       }
 
@@ -560,6 +577,7 @@ export default {
           PersistentVolume:         'pv',
           StorageClass:             'sc',
           Endpoints:                'ep',
+          ServiceAccount:           'sa',
         }
 
         const icon = icons[type] ? icons[type] : 'default';
