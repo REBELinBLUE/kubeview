@@ -151,7 +151,7 @@ export default {
           err.text().then(message => {
             this.loading = false
             alert(message)
-          }).catch(err => {
+          }).catch(() => {
             console.error(err);
           })
         })
