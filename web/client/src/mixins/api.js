@@ -35,11 +35,11 @@ export default {
           return resp.json();
         })
         .then(namespaces => {
-            if (FILTERED_NS.length == 0) {
-                return namespaces
-            }
+          if (FILTERED_NS.length == 0) {
+              return namespaces
+          }
 
-            return namespaces.filter(ns => FILTERED_NS.includes(ns.metadata.name))
+          return namespaces.filter(ns => FILTERED_NS.includes(ns.metadata.name))
         })
         .catch(err => {
           // eslint-disable-next-line

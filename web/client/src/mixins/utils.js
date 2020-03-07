@@ -1,6 +1,5 @@
 export default {
   methods: {
-
     utilsHashStr(s) {
       let hash = 0, i, chr;
 
@@ -19,7 +18,7 @@ export default {
 
     utilsCheckNested(obj /*, level1, level2, ... levelN*/) {
       const args = Array.prototype.slice.call(arguments, 1);
-    
+
       for (var i = 0; i < args.length; i++) {
         if (!obj || !Object.prototype.hasOwnProperty.call(obj, args[i])) {
           return false;
@@ -27,7 +26,7 @@ export default {
 
         obj = obj[args[i]];
       }
-      
+
       return true;
     },
 
