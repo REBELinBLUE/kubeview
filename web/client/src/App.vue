@@ -110,7 +110,7 @@ export default {
         serviceaccounts: false,
         persistentvolumeclaims: true,
         persistentvolumes: false,
-        storageclasses: true,
+        storageclasses: false,
         loadbalancers: true,
       }
     }
