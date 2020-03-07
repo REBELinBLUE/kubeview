@@ -38,13 +38,13 @@ func routeHealthCheck(resp http.ResponseWriter, req *http.Request) {
 //
 func routeStatus(resp http.ResponseWriter, req *http.Request) {
 	type status struct {
-		Healthy    bool   `json:"healthy"`
-		Version    string `json:"version"`
+		Healthy	bool   `json:"healthy"`
+		Version	string `json:"version"`
 		BuildInfo  string `json:"buildInfo"`
 		Hostname   string `json:"hostname"`
-		OS         string `json:"os"`
-		Arch       string `json:"architecture"`
-		CPU        int    `json:"cpuCount"`
+		OS		 string `json:"os"`
+		Arch	   string `json:"architecture"`
+		CPU		int	`json:"cpuCount"`
 		GoVersion  string `json:"goVersion"`
 		ClientAddr string `json:"clientAddress"`
 		ServerHost string `json:"serverHost"`
@@ -56,14 +56,14 @@ func routeStatus(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	currentStatus := status{
-		Healthy:    healthy,
-		Version:    version,
+		Healthy:	healthy,
+		Version:	version,
 		BuildInfo:  buildInfo,
 		Hostname:   hostname,
 		GoVersion:  runtime.Version(),
-		OS:         runtime.GOOS,
-		Arch:       runtime.GOARCH,
-		CPU:        runtime.NumCPU(),
+		OS:		 runtime.GOOS,
+		Arch:	   runtime.GOARCH,
+		CPU:		runtime.NumCPU(),
 		ClientAddr: req.RemoteAddr,
 		ServerHost: req.Host,
 	}
@@ -80,20 +80,20 @@ func routeStatus(resp http.ResponseWriter, req *http.Request) {
 
 // Data struct to hold our returned data
 type scrapeData struct {
-	Pods                   []apiv1.Pod                   `json:"pods"`
-	Services               []apiv1.Service               `json:"services"`
-	Endpoints              []apiv1.Endpoints             `json:"endpoints"`
-	PersistentVolumes      []apiv1.PersistentVolume      `json:"persistentvolumes"`
+	Pods				   []apiv1.Pod				   `json:"pods"`
+	Services			   []apiv1.Service			   `json:"services"`
+	Endpoints			  []apiv1.Endpoints			 `json:"endpoints"`
+	PersistentVolumes	  []apiv1.PersistentVolume	  `json:"persistentvolumes"`
 	PersistentVolumeClaims []apiv1.PersistentVolumeClaim `json:"persistentvolumeclaims"`
-	Deployments            []appsv1.Deployment           `json:"deployments"`
-	DaemonSets             []appsv1.DaemonSet            `json:"daemonsets"`
-	ReplicaSets            []appsv1.ReplicaSet           `json:"replicasets"`
-	StatefulSets           []appsv1.StatefulSet          `json:"statefulsets"`
-	Ingresses              []v1beta1.Ingress             `json:"ingresses"`
-	ConfigMaps             []apiv1.ConfigMap             `json:"configmaps"`
-	Secrets                []apiv1.Secret                `json:"secrets"`
-	StorageClasses         []storagev1.StorageClass      `json:"storageclasses"`
-	ServiceAccounts        []apiv1.ServiceAccount        `json:"serviceaccounts"`
+	Deployments			[]appsv1.Deployment		   `json:"deployments"`
+	DaemonSets			 []appsv1.DaemonSet			`json:"daemonsets"`
+	ReplicaSets			[]appsv1.ReplicaSet		   `json:"replicasets"`
+	StatefulSets		   []appsv1.StatefulSet		  `json:"statefulsets"`
+	Ingresses			  []v1beta1.Ingress			 `json:"ingresses"`
+	ConfigMaps			 []apiv1.ConfigMap			 `json:"configmaps"`
+	Secrets				[]apiv1.Secret				`json:"secrets"`
+	StorageClasses		 []storagev1.StorageClass	  `json:"storageclasses"`
+	ServiceAccounts		[]apiv1.ServiceAccount		`json:"serviceaccounts"`
 }
 
 // GetNamespaces - Return list of all namespaces in cluster
@@ -162,31 +162,66 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the remaining resource types can't be listed it doesn't matter, handle it on the frontend
-	services, _ := clientset.CoreV1().Services(namespace).List(metav1.ListOptions{})
-	endpoints, _ := clientset.CoreV1().Endpoints(namespace).List(metav1.ListOptions{})
-	pvs, _ := clientset.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
-	pvcs, _ := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
-	configmaps, _ := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
-	secrets, _ := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
-	ingresses, _ := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
-	storageclasses, _ := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
-	serviceaccounts, _ := clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
+	services, err := clientset.CoreV1().Services(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	endpoints, err := clientset.CoreV1().Endpoints(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	pvs, err := clientset.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	configmaps, err := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	secrets, err := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	storageclasses, err := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
+
+	serviceaccounts, err := clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		log.Println("### Kubernetes API error", err.Error())
+	}
 
 	scrapeResult := scrapeData{
-		Pods:                   pods.Items,
-		Services:               services.Items,
-		Endpoints:              endpoints.Items,
-		PersistentVolumes:      pvs.Items,
+		Pods:				   pods.Items,
+		Services:			   services.Items,
+		Endpoints:			  endpoints.Items,
+		PersistentVolumes:	  pvs.Items,
 		PersistentVolumeClaims: pvcs.Items,
-		Deployments:            deployments.Items,
-		DaemonSets:             daemonsets.Items,
-		ReplicaSets:            replicasets.Items,
-		StatefulSets:           statefulsets.Items,
-		Ingresses:              ingresses.Items,
-		ConfigMaps:             configmaps.Items,
-		Secrets:                secrets.Items,
-		StorageClasses:         storageclasses.Items,
-		ServiceAccounts:        serviceaccounts.Items,
+		Deployments:			deployments.Items,
+		DaemonSets:			 daemonsets.Items,
+		ReplicaSets:			replicasets.Items,
+		StatefulSets:		   statefulsets.Items,
+		Ingresses:			  ingresses.Items,
+		ConfigMaps:			 configmaps.Items,
+		Secrets:				secrets.Items,
+		StorageClasses:		 storageclasses.Items,
+		ServiceAccounts:		serviceaccounts.Items,
 	}
 
 	scrapeResultJSON, _ := json.Marshal(scrapeResult)
