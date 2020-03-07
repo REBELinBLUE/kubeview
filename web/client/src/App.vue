@@ -1,9 +1,12 @@
 <template>
   <div class="app">
+    <!-- FIXME: Move this to another component -->
     <b-navbar toggleable="md" type="dark" variant="dark">
       <b-navbar-toggle target="nav_collapse"></b-navbar-toggle>
 
-      <b-navbar-brand class="logoText"><img src="./assets/logo.png" class="logo"> &nbsp;KubeView</b-navbar-brand>
+      <b-navbar-brand class="logoText">
+        <img src="./assets/logo.png" class="logo"> &nbsp;KubeView
+      </b-navbar-brand>
 
       <b-collapse is-nav id="nav_collapse">
         <b-navbar-nav>
@@ -12,19 +15,18 @@
             <b-dropdown-item @click="filter = ''; namespace = ns.metadata.name" v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</b-dropdown-item>
           </b-dropdown>&nbsp;&nbsp;
 
-            <datalist id="ns-list">
-              <option v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</option>
-            </datalist>
-        </b-navbar-nav>
+          <datalist id="ns-list">
+            <option v-for="ns in namespaces" :key="ns.metadata.uid" >{{ ns.metadata.name }}</option>
+          </datalist>
 
-        <b-navbar-nav>
           <b-form-input v-model="filter" @keyup.enter="$refs.viewer.refreshData(false)" class="filterBox" placeholder="filter..."></b-form-input>&nbsp;&nbsp;
-          <b-button variant="info" @click="$refs.viewer.refreshData(false)">Refresh</b-button> &nbsp;&nbsp;
         </b-navbar-nav>
 
-        <b-navbar-nav>
+        <b-navbar-nav class="refresh">
+          <b-button variant="info" @click="$refs.viewer.refreshData(false)">Refresh</b-button> &nbsp;&nbsp;
           <b-dropdown split :text="autoRefreshText" split-variant="light" variant="info">
             <b-dropdown-item @click="autoRefresh=0">Off</b-dropdown-item>
+            <b-dropdown-item @click="autoRefresh=2">2 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=5">5 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=10">10 secs</b-dropdown-item>
             <b-dropdown-item @click="autoRefresh=15">15 secs</b-dropdown-item>
@@ -35,36 +37,55 @@
       </b-collapse>
 
       <b-navbar-nav class="ml-auto">
+        <b-button variant="primary" v-b-modal.optionsModal>Settings</b-button>
         <b-button variant="success" v-b-modal.aboutModal>Help</b-button>
       </b-navbar-nav>
     </b-navbar>
 
-    <viewer :namespace="namespace" :filter="filter" :autoRefresh="autoRefresh" ref="viewer"></viewer>
+    <viewer :options="options" :namespace="namespace" :filter="filter" :autoRefresh="autoRefresh" ref="viewer" />
 
-    <b-modal id="aboutModal" title="Help with KubeView" header-bg-variant="info" header-text-variant="dark" ok-only>
-      <div class="text-center">
-        <img src="./assets/logo.png" width="100">
+    <help />
 
-        <p>Kubeview displays the current state of your cluster. Each resource is represented by a different icon, click them to see information on the resource.</p>
-        <p>Solid lines indicate that one resource <i>references</i> another in the direction of the arrow, a dashed line indicates that one resources <i>creates</i> another in the direction of the arrow.</p>
+    <!-- FIXME: Move this to another component -->
+    <b-modal id="optionsModal" title="Settings" header-bg-variant="info" header-text-variant="dark" ok-only>
+      <b-form>
+        <b-form-group label="Configuration">
+          <b-form-checkbox v-model="options.configmaps" name="configmaps"> Show ConfigMaps</b-form-checkbox>
+          <b-form-checkbox v-model="options.secrets" name="secrets"> Show Secrets</b-form-checkbox>
+        </b-form-group>
 
-        <b-button href="https://github.com/REBELinBLLUE/kubeview" target="_blank" variant="success">GitHub Project</b-button>
+        <b-form-group label="Storage">
+          <b-form-checkbox v-model="options.persistentvolumeclaims" name="persistentvolumeclaims"> Show PersistentVolumeClaims</b-form-checkbox>
+          <b-form-checkbox v-model="options.persistentvolumes" name="persistentvolumes"> Show PersistentVolumes</b-form-checkbox>
+          <b-form-checkbox v-model="options.storageclasses" name="storageclasses"> Show StorageClasses</b-form-checkbox>
+        </b-form-group>
 
-        <p id="credit">Based on <a target="_blank" href="https://github.com/benc-uk/kubeview">KubeView by Ben Coleman</a></p>
-      </div>
+        <b-form-group label="Networking">
+          <b-form-checkbox v-model="options.services" name="services"> Show Services &amp; Endpoints</b-form-checkbox>
+          <b-form-checkbox v-model="options.ingresses" name="ingresses"> Show Ingresses</b-form-checkbox>
+          <b-form-checkbox v-model="options.ingress_tls" name="ingress_tls"> Show Ingresses TLS Secrets</b-form-checkbox>
+          <b-form-checkbox v-model="options.loadbalancers" name="loadbalancers"> Show LoadBalancers</b-form-checkbox>
+        </b-form-group>
+
+        <b-form-group label="Miscellaneous">
+          <b-form-checkbox v-model="options.serviceaccounts" name="sa"> Show ServiceAccounts</b-form-checkbox>
+        </b-form-group>
+      </b-form>
     </b-modal>
   </div>
 </template>
 
 <script>
 import Viewer from './components/Viewer.vue'
+import Help from './components/Help.vue';
 import apiMixin from "./mixins/api.js";
 
 export default {
   mixins: [ apiMixin ],
 
   components: {
-    Viewer
+    Viewer,
+    Help,
   },
 
   computed: {
@@ -79,7 +100,19 @@ export default {
       namespaces: [],
       filter: "",
       version: require('../package.json').version,
-      autoRefresh: 0
+      autoRefresh: 0,
+      options: {
+        services: true,
+        ingresses: true,
+        ingress_tls: false,
+        configmaps: false,
+        secrets: false,
+        serviceaccounts: false,
+        persistentvolumeclaims: true,
+        persistentvolumes: false,
+        storageclasses: true,
+        loadbalancers: true,
+      }
     }
   },
 
@@ -124,6 +157,12 @@ export default {
     padding: 0;
     height: 100%
   }
+  .ml-auto button {
+    margin-right: 10px;
+  }
+  .refresh {
+    margin-left: 10px;
+  }
   .logo {
     height: 45px;
   }
@@ -133,8 +172,5 @@ export default {
   .filterBox {
     font-size: 120%;
     width: 100px;
-  }
-  #credit {
-    margin: 15px auto 0px auto;
   }
 </style>

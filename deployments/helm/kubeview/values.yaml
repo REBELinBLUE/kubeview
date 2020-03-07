@@ -5,7 +5,7 @@
 replicaCount: 1
 
 image:
-  repository: bencuk/kubeview
+  repository: rebelinblue/kubeview
   tag: latest
   pullPolicy: IfNotPresent
 

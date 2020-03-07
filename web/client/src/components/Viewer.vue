@@ -35,7 +35,7 @@ export default {
     'loading': Loading
   },
 
-  props: [ 'namespace', 'filter', 'autoRefresh', 'rootType' ],
+  props: [ 'namespace', 'filter', 'autoRefresh', 'rootType', 'options' ],
 
   data() {
     return {
@@ -49,7 +49,11 @@ export default {
 
   // VueTimers mixin is pretty sweet
   timers: {
-    timerRefresh: { time: 60000, autostart: false, repeat: true }
+    timerRefresh: {
+      time: 60000,
+      autostart: false,
+      repeat: true
+    }
   },
 
   watch: {
@@ -92,6 +96,7 @@ export default {
 
       if (sourceCopy.metadata.annotations) {
         delete sourceCopy.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']
+
         if (Object.keys(sourceCopy.metadata.annotations).length == 0) {
           delete sourceCopy.metadata.annotations
         }
@@ -258,7 +263,7 @@ export default {
     },
 
     //
-    // Convience method to add ReplicaSets / DaemonSets / StatefulSets
+    // Convenience method to add ReplicaSets / DaemonSets / StatefulSets
     //
     addSet(type, kubeObjs) {
       for (let obj of kubeObjs) {
@@ -325,6 +330,12 @@ export default {
           let groupId = `grp_${owner.kind}_${owner.name}`
 
           this.addNode(pod, 'Pod', this.calcStatus(pod), groupId)
+
+          // Find all owning sets of this pod
+          for (let ownerRef of pod.metadata.ownerReferences || []) {
+            // Link pod up to the owning set/group
+            this.addLink(`${ownerRef.kind}_${ownerRef.name}`, `Pod_${pod.metadata.name}`, 'creates')
+          }
         } else {
           // Naked pods don't go into groups
           this.addNode(pod, 'Pod', this.calcStatus(pod))
@@ -334,7 +345,7 @@ export default {
         const containers = (pod.spec.initContainers || []).concat(pod.spec.containers || []);
         for (let container of containers) {
           for (let envFrom of container.envFrom || []) {
-            if (envFrom.configMapRef) {
+            if (envFrom.configMapRef && this.options.configmaps) {
               let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == envFrom.configMapRef.name);
               if (!configmap) {
                 continue;
@@ -344,7 +355,7 @@ export default {
               this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${envFrom.configMapRef.name}`, 'references')
             }
 
-            if (envFrom.secretRef) {
+            if (envFrom.secretRef && this.options.secrets) {
               let secret = (this.apiData.secrets || []).find(p => p.metadata.name == envFrom.secretRef.name);
               if (!secret) {
                 continue;
@@ -360,7 +371,7 @@ export default {
               continue;
             }
 
-            if (env.valueFrom.configMapKeyRef) {
+            if (env.valueFrom.configMapKeyRef && this.options.configmaps) {
               let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == env.valueFrom.configMapKeyRef.name);
               if (!configmap) {
                 continue;
@@ -370,7 +381,7 @@ export default {
               this.addLink(`Pod_${pod.metadata.name}`, `ConfigMap_${env.valueFrom.configMapKeyRef.name}`, 'references')
             }
 
-            if (env.valueFrom.secretKeyRef) {
+            if (env.valueFrom.secretKeyRef && this.options.secrets) {
               let secret = (this.apiData.secrets || []).find(p => p.metadata.name == env.valueFrom.secretKeyRef.name);
               if (!secret) {
                 continue;
@@ -384,7 +395,7 @@ export default {
 
         // Add PVCs linked to Pod
         for (let vol of pod.spec.volumes || []) {
-          if (vol.persistentVolumeClaim) {
+          if (vol.persistentVolumeClaim && this.options.persistentvolumeclaims) {
             let pvc = (this.apiData.persistentvolumeclaims || []).find(p => p.metadata.name == vol.persistentVolumeClaim.claimName)
             if (!pvc) {
               continue;
@@ -393,25 +404,28 @@ export default {
             this.addNode(pvc, 'PersistentVolumeClaim')
             this.addLink(`Pod_${pod.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'references')
 
-            let pv = (this.apiData.persistentvolumes || []).find(p => p.spec.claimRef.uid == pvc.metadata.uid);
-            if (!pv) {
-              continue;
+            if (this.options.persistentvolumes) {
+              let pv = (this.apiData.persistentvolumes || []).find(p => p.spec.claimRef.uid == pvc.metadata.uid);
+              if (!pv) {
+                continue;
+              }
+
+              this.addNode(pv, 'PersistentVolume')
+              this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'creates')
+
+              if (this.options.storageclasses) {
+                let sc = (this.apiData.storageclasses || []).find(p => p.metadata.name == pv.spec.storageClassName)
+                if (!sc) {
+                  continue;
+                }
+
+                this.addNode(sc, 'StorageClass')
+                this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
+              }
             }
-
-            this.addNode(pv, 'PersistentVolume')
-            this.addLink(`PersistentVolume_${pv.metadata.name}`, `PersistentVolumeClaim_${vol.persistentVolumeClaim.claimName}`, 'creates')
-
-            let sc = (this.apiData.storageclasses || []).find(p => p.metadata.name == pv.spec.storageClassName)
-            if (!sc) {
-              continue;
-            }
-
-            this.addNode(sc, 'StorageClass')
-            this.addLink(`PersistentVolume_${pv.metadata.name}`, `StorageClass_${sc.metadata.name}`, 'references')
-
           }
 
-          if (vol.configMap) {
+          if (vol.configMap && this.options.configmaps) {
             let configmap = (this.apiData.configmaps || []).find(p => p.metadata.name == vol.configMap.name);
             if (!configmap) {
               continue;
@@ -428,7 +442,11 @@ export default {
             }
 
             if (secret.type == "kubernetes.io/service-account-token") {
-              const serviceAccount = (this.apiData.serviceaccounts || []).find(s => s.metadata.name == pod.spec.serviceAccount |  s.metadata.name == pod.spec.serviceAccountName);
+              if (!this.options.serviceaccounts) {
+                continue
+              }
+
+              const serviceAccount = (this.apiData.serviceaccounts || []).find(s => s.metadata.name == pod.spec.serviceAccount | s.metadata.name == pod.spec.serviceAccountName);
               if (serviceAccount && serviceAccount.metadata.name != "default") {
                 this.addNode(serviceAccount, 'ServiceAccount')
                 this.addNode(secret, 'Secret')
@@ -440,105 +458,107 @@ export default {
               continue;
             }
 
+            if (!this.options.secrets) {
+              continue;
+            }
+
             this.addNode(secret, 'Secret')
             this.addLink(`Pod_${pod.metadata.name}`, `Secret_${vol.secret.secretName}`, 'references')
           }
         }
-
-        // Find all owning sets of this pod
-        for (let ownerRef of pod.metadata.ownerReferences || []) {
-          // Link pod up to the owning set/group
-          this.addLink(`${ownerRef.kind}_${ownerRef.name}`, `Pod_${pod.metadata.name}`, 'creates')
-        }
-
-        const serviceAccount = (this.apiData.serviceaccounts || []).find(s => s.metadata.name == pod.spec.serviceAccount || s.metadata.name == pod.spec.serviceAccountName);
-        if (serviceAccount && serviceAccount.metadata.name != 'default') {
-          this.addNode(serviceAccount, 'ServiceAccount')
-          this.addLink(`Pod_${pod.metadata.name}`, `ServiceAccount_${serviceAccount.metadata.name}`, 'references')
-        }
       }
 
       // Find all services and endpoints
-      for (let svc of this.apiData.services || []) {
-        if (!this.filterShowNode(svc)) {
-          continue
-        }
-
-        let serviceId = `Service_${svc.metadata.name}`
-
-        if (svc.metadata.name == 'kubernetes') {
-          continue
-        }
-
-        // Find matching endpoint, and merge subsets into service
-        let ep = (this.apiData.endpoints || []).find(ep => ep.metadata.name == svc.metadata.name)
-
-        this.addNode(svc, 'Service')
-        this.addNode(ep, 'Endpoints');
-        this.addLink(serviceId, `Endpoints_${ep.metadata.name}`, 'creates')
-
-        for (let subset of ep.subsets || []) {
-          let addresses = (subset.addresses || [])
-
-          for (let address of addresses || []) {
-            if (!address.targetRef || address.targetRef.kind != "Pod") {
-              continue
-            }
-
-            this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
-          }
-        }
-
-        // Find all external addresses of service, and add them
-        // For this we create a pseudo-object
-        for (let lb of svc.status.loadBalancer.ingress || []) {
-          // Fake Kubernetes object to display the LoadBalancers
-          let ipObj = { metadata: { name: lb.ip || lb.hostname } }
-
-          this.addNode(ipObj, 'LoadBalancer')
-          this.addLink(`Service_${svc.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
-        }
-      }
-
-      // Add Ingresses and link to Services
-      for (let ingress of this.apiData.ingresses || []) {
-        if (!this.filterShowNode(ingress)) {
-          continue
-        }
-
-        this.addNode(ingress, 'Ingress')
-
-        // Find all external addresses of ingresses, and add them
-        for (let lb of ingress.status.loadBalancer.ingress || []) {
-          // Fake Kubernetes object to display the LoadBalancers
-          let ipObj = { metadata: { name: lb.ip || lb.hostname } }
-
-          this.addNode(ipObj, 'LoadBalancer')
-          this.addLink(`Ingress_${ingress.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
-        }
-
-        // Ingresses joined to Services by the rules
-        for (let rule of ingress.spec.rules || []) {
-          if (!rule.http.paths) {
+      if (this.options.services) {
+        for (let svc of this.apiData.services || []) {
+          if (!this.filterShowNode(svc)) {
             continue
           }
 
-          for (let path of rule.http.paths || []) {
-            let serviceName = path.backend.serviceName
+          let serviceId = `Service_${svc.metadata.name}`
 
-            this.addLink(`Ingress_${ingress.metadata.name}`, `Service_${serviceName}`, 'references')
+          if (svc.metadata.name == 'kubernetes') {
+            continue
+          }
+
+          // Find matching endpoint, and merge subsets into service
+          let ep = (this.apiData.endpoints || []).find(ep => ep.metadata.name == svc.metadata.name)
+
+          this.addNode(svc, 'Service')
+          this.addNode(ep, 'Endpoints');
+          this.addLink(serviceId, `Endpoints_${ep.metadata.name}`, 'creates')
+
+          for (let subset of ep.subsets || []) {
+            let addresses = (subset.addresses || [])
+
+            for (let address of addresses || []) {
+              if (!address.targetRef || address.targetRef.kind != "Pod") {
+                continue
+              }
+
+              this.addLink(`Endpoints_${ep.metadata.name}`, `Pod_${address.targetRef.name}`, 'references')
+            }
+          }
+
+          if (this.options.loadbalancers) {
+            // Find all external addresses of service, and add them
+            // For this we create a pseudo-object
+            for (let lb of svc.status.loadBalancer.ingress || []) {
+              // Fake Kubernetes object to display the LoadBalancers
+              let ipObj = {metadata: {name: lb.ip || lb.hostname}}
+
+              this.addNode(ipObj, 'LoadBalancer')
+              this.addLink(`Service_${svc.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
+            }
           }
         }
 
-        // Ingress tls secrets
-        for (let tls of ingress.spec.tls || []) {
-          let secret = (this.apiData.secrets || []).find(p => p.metadata.name == tls.secretName);
-          if (!secret) {
-            continue;
-          }
+        // Add Ingresses and link to Services
+        if (this.options.ingresses) {
+          for (let ingress of this.apiData.ingresses || []) {
+            if (!this.filterShowNode(ingress)) {
+              continue
+            }
 
-          this.addNode(secret, 'Secret')
-          this.addLink(`Ingress_${ingress.metadata.name}`, `Secret_${tls.secretName}`, 'references')
+            this.addNode(ingress, 'Ingress')
+
+            if (this.options.loadbalancers) {
+              // Find all external addresses of ingresses, and add them
+              for (let lb of ingress.status.loadBalancer.ingress || []) {
+                // Fake Kubernetes object to display the LoadBalancers
+                let ipObj = {metadata: {name: lb.ip || lb.hostname}}
+
+                this.addNode(ipObj, 'LoadBalancer')
+                this.addLink(`Ingress_${ingress.metadata.name}`, `LoadBalancer_${ipObj.metadata.name}`, 'references')
+              }
+            }
+
+            // Ingresses joined to Services by the rules
+            for (let rule of ingress.spec.rules || []) {
+              if (!rule.http.paths) {
+                continue
+              }
+
+              for (let path of rule.http.paths || []) {
+                let serviceName = path.backend.serviceName
+
+                this.addLink(`Ingress_${ingress.metadata.name}`, `Service_${serviceName}`, 'references')
+              }
+            }
+
+            if (this.options.ingress_tls) {
+              // Ingress TLS secrets
+              for (let tls of ingress.spec.tls || []) {
+                let secret = (this.apiData.secrets || []).find(p => p.metadata.name == tls.secretName);
+                if (!secret) {
+                  continue;
+                }
+
+                this.addNode(secret, 'Secret')
+                this.addLink(`Ingress_${ingress.metadata.name}`, `Secret_${tls.secretName}`, 'references')
+              }
+            }
+          }
         }
       }
 
