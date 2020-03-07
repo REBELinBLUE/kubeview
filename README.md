@@ -22,6 +22,9 @@ Currently displays:
 - PersistentVolumeClaims
 - PersistentVolumes
 - StorageClasses
+- ServiceAccounts
+
+Includes the ability to limit to specific namespaces and toggle different resource types.
 
 ## Application Components
 
