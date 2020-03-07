@@ -471,7 +471,7 @@ export default {
         }
 
         // Find matching endpoint, and merge subsets into service
-        let ep = this.apiData.endpoints.find(ep => ep.metadata.name == svc.metadata.name)
+        let ep = (this.apiData.endpoints || []).find(ep => ep.metadata.name == svc.metadata.name)
 
         this.addNode(svc, 'Service')
         this.addNode(ep, 'Endpoints');
@@ -532,7 +532,7 @@ export default {
 
         // Ingress tls secrets
         for (let tls of ingress.spec.tls || []) {
-          let secret = this.apiData.secrets.find(p => p.metadata.name == tls.secretName);
+          let secret = (this.apiData.secrets || []).find(p => p.metadata.name == tls.secretName);
           if (!secret) {
             continue;
           }
