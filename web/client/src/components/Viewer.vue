@@ -148,12 +148,16 @@ export default {
           this.loading = false
         })
         .catch(err => {
-          err.text().then(message => {
-            this.loading = false
-            alert(message)
-          }).catch(() => {
-            console.error(err);
-          })
+          if (err.text) {
+            err.text().then(message => {
+              this.loading = false
+              alert(message)
+            })
+
+            return
+          }
+
+          console.error(err);
         })
     },
 
@@ -424,7 +428,7 @@ export default {
             }
 
             if (secret.type == "kubernetes.io/service-account-token") {
-              const serviceAccount = this.apiData.serviceaccounts.find(s => s.metadata.name == pod.spec.serviceAccount |  s.metadata.name == pod.spec.serviceAccountName);
+              const serviceAccount = (this.apiData.serviceaccounts || []).find(s => s.metadata.name == pod.spec.serviceAccount |  s.metadata.name == pod.spec.serviceAccountName);
               if (serviceAccount && serviceAccount.metadata.name != "default") {
                 this.addNode(serviceAccount, 'ServiceAccount')
                 this.addNode(secret, 'Secret')
@@ -447,7 +451,7 @@ export default {
           this.addLink(`${ownerRef.kind}_${ownerRef.name}`, `Pod_${pod.metadata.name}`, 'creates')
         }
 
-        const serviceAccount = this.apiData.serviceaccounts.find(s => s.metadata.name == pod.spec.serviceAccount || s.metadata.name == pod.spec.serviceAccountName);
+        const serviceAccount = (this.apiData.serviceaccounts || []).find(s => s.metadata.name == pod.spec.serviceAccount || s.metadata.name == pod.spec.serviceAccountName);
         if (serviceAccount && serviceAccount.metadata.name != 'default') {
           this.addNode(serviceAccount, 'ServiceAccount')
           this.addLink(`Pod_${pod.metadata.name}`, `ServiceAccount_${serviceAccount.metadata.name}`, 'references')

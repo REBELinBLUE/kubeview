@@ -18,10 +18,13 @@ export default {
             throw err
           }
 
+          if (!err.text) {
+            console.error(err)
+            return
+          }
+
           err.text().then(message => {
             console.log(`### API Error! ${message}`);
-          }).catch(() => {
-              console.error(err)
           })
         })
     },
