@@ -56,15 +56,15 @@
 
         <b-form-group label="Storage">
           <b-form-checkbox v-model="options.persistentvolumeclaims" name="persistentvolumeclaims"> Show PersistentVolumeClaims</b-form-checkbox>
-          <b-form-checkbox v-model="options.persistentvolumes" name="persistentvolumes"> Show PersistentVolumes</b-form-checkbox>
-          <b-form-checkbox v-model="options.storageclasses" name="storageclasses"> Show StorageClasses</b-form-checkbox>
+          <b-form-checkbox v-model="options.persistentvolumes" name="persistentvolumes" v-b-tooltip.hover.left="'Requires Claims'"> Show PersistentVolumes</b-form-checkbox>
+          <b-form-checkbox v-model="options.storageclasses" name="storageclasses" v-b-tooltip.hover.left="'Requires Volumes'"> Show StorageClasses</b-form-checkbox>
         </b-form-group>
 
         <b-form-group label="Networking">
           <b-form-checkbox v-model="options.services" name="services"> Show Services &amp; Endpoints</b-form-checkbox>
-          <b-form-checkbox v-model="options.ingresses" name="ingresses"> Show Ingresses</b-form-checkbox>
-          <b-form-checkbox v-model="options.ingress_tls" name="ingress_tls"> Show Ingresses TLS Secrets</b-form-checkbox>
-          <b-form-checkbox v-model="options.loadbalancers" name="loadbalancers"> Show LoadBalancers</b-form-checkbox>
+          <b-form-checkbox v-model="options.ingresses" name="ingresses" v-b-tooltip.hover.left="'Requires Services'"> Show Ingresses</b-form-checkbox>
+          <b-form-checkbox v-model="options.ingress_tls" name="ingress_tls" v-b-tooltip.hover.left="'Requires Ingresses'"> Show Ingresses TLS Secrets</b-form-checkbox>
+          <b-form-checkbox v-model="options.loadbalancers" name="loadbalancers" v-b-tooltip.hover.left="'Requires Services/Ingresses'"> Show LoadBalancers</b-form-checkbox>
         </b-form-group>
 
         <b-form-group label="Miscellaneous">
