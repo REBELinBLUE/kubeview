@@ -40,3 +40,10 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+filter_namespaces: []
+  # - production
+  # - staging
+  # - uat
+  # - qa
+  # - development

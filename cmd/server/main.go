@@ -85,6 +85,7 @@ func main() {
 	router.PathPrefix("/js").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/css").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/img").Handler(http.StripPrefix("/", fileServer))
+	router.PathPrefix("/config").Handler(http.StripPrefix("/", fileServer))
 	router.PathPrefix("/favicon.png").Handler(http.StripPrefix("/", fileServer))
 
 	// EVERYTHING else redirect to index.html

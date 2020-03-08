@@ -21,6 +21,10 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       serviceAccountName: {{ include "kubeview.fullname" . }}
+      volumes:
+        - name: "{{ include "kubeview.fullname" . }}-config"
+          configMap:
+            name: {{ include "kubeview.fullname" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -29,6 +33,10 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          volumeMounts:
+            - name: "{{ include "kubeview.fullname" . }}-config"
+              mountPath: "/app/frontend/config/"
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /

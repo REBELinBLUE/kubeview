@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubeview.fullname" . }}
+  labels:
+{{ include "kubeview.labels" . | indent 4 }}
+data:
+  env.js: |-
+    (function() {
+      window.FILTER_NAMESPACES = {{ .Values.filter_namespaces | toJson }}
+    }());
