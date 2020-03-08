@@ -34,11 +34,18 @@ export default {
           return resp.json();
         })
         .then(namespaces => {
-          if (!window.FILTER_NAMESPACES || window.FILTER_NAMESPACES.length == 0) {
+          if (!window.INCLUDE_NAMESPACES || window.INCLUDE_NAMESPACES.length == 0) {
               return namespaces
           }
 
-          return namespaces.filter(ns => window.FILTER_NAMESPACES.includes(ns.metadata.name))
+          return namespaces.filter(ns => window.INCLUDE_NAMESPACES.includes(ns.metadata.name))
+        })
+        .then(namespaces => {
+          if (!window.REMOVE_NAMESPACES || window.REMOVE_NAMESPACES.length == 0) {
+            return namespaces
+          }
+
+          return namespaces.filter(ns => !window.REMOVE_NAMESPACES.includes(ns.metadata.name))
         })
         .catch(err => {
           // eslint-disable-next-line

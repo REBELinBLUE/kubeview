@@ -27,7 +27,7 @@ ingress:
   #    hosts:
   #      - chart-example.local
 
-resources: 
+resources:
   limits:
     cpu: 100m
     memory: 128Mi
@@ -41,9 +41,13 @@ tolerations: []
 
 affinity: {}
 
-filter_namespaces: []
-  # - production
-  # - staging
-  # - uat
-  # - qa
-  # - development
+namespaces:
+  show: []
+    # - production
+    # - staging
+    # - uat
+    # - qa
+    # - development
+  hide:
+    - kube-node-lease
+    - kube-public

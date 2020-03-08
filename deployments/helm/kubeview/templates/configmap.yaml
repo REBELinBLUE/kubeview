@@ -7,5 +7,6 @@ metadata:
 data:
   env.js: |-
     (function() {
-      window.FILTER_NAMESPACES = {{ .Values.filter_namespaces | toJson }}
+      window.INCLUDE_NAMESPACES = {{ .Values.namespaces.show | toJson }}
+      window.REMOVE_NAMESPACES = {{ .Values.namespaces.hide | toJson }}
     }());

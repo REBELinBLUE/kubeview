@@ -1,3 +1,4 @@
 (function() {
-    window.FILTER_NAMESPACES = []
+  window.INCLUDE_NAMESPACES = []
+  window.REMOVE_NAMESPACES = ['kube-node-lease', 'kube-public']
 }());
