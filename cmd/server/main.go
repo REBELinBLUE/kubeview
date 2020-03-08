@@ -7,7 +7,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -20,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog"
 )
 
 var (
@@ -33,24 +33,28 @@ var (
 // Main entry point, will start HTTP service
 //
 func main() {
-	log.SetOutput(os.Stdout) // Personal preference on log output
-	log.Printf("### Kubeview v%v starting...", version)
+	klog.SetOutputBySeverity("INFO", os.Stdout)
+	klog.SetOutputBySeverity("WARNING", os.Stdout)
+	klog.SetOutputBySeverity("ERROR", os.Stderr)
+	klog.SetOutputBySeverity("FATAL", os.Stderr)
+
+	klog.Infof("### Kubeview v%v starting...", version)
 
 	// Port to listen on, change the default as you see fit
 	serverPort := envhelper.GetEnvInt("PORT", 8000)
 	inCluster := envhelper.GetEnvBool("IN_CLUSTER", false)
 
-	log.Println("### Connecting to Kubernetes...")
+	klog.Info("### Connecting to Kubernetes...")
 	var config *rest.Config
 	var err error
 
 	// In cluster connect using in-cluster "magic", else build config from .kube/config file
 	if inCluster {
-		log.Println("### Creating client in cluster mode")
+		klog.Info("### Creating client in cluster mode")
 		config, err = rest.InClusterConfig()
 	} else {
 		var kubeconfig = filepath.Join(os.Getenv("HOME"), ".kube", "config") // FIXME: Check for KUBECONFIG variable
-		log.Println("### Creating client with config file:", kubeconfig)
+		klog.Infof("### Creating client with config file: %s", kubeconfig)
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
 
@@ -59,7 +63,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	log.Println("### Connected to:", config.Host)
+	klog.Infof("### Connected to: %s", config.Host)
 
 	// Create the clientset, which is our main interface to the Kubernetes API
 	clientset, err = kubernetes.NewForConfig(config)
@@ -93,10 +97,10 @@ func main() {
 		http.ServeFile(resp, req, staticDirectory+"/index.html")
 	})
 
-	log.Printf("### Serving static content from '%v'\n", staticDirectory)
+	klog.Infof("### Serving static content from '%s'", staticDirectory)
 
 	// Start server
-	log.Printf("### Server listening on %v\n", serverPort)
+	klog.Infof("### Server listening on %v", serverPort)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", serverPort), router)
 
@@ -114,7 +118,7 @@ func starterMiddleware(next http.Handler) http.Handler {
 		var lastPos int = strings.LastIndex(req.RemoteAddr, ":")
 
 		resp.Header().Set("Access-Control-Allow-Origin", "*")
-		log.Println("###", req.RemoteAddr[0:lastPos], req.Method, req.RequestURI)
+		klog.Infof("### %s %s %s", req.RemoteAddr[0:lastPos], req.Method, req.RequestURI)
 		next.ServeHTTP(resp, req)
 	})
 }
