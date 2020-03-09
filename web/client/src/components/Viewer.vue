@@ -391,6 +391,13 @@ export default {
               this.addLink(`Pod_${pod.metadata.name}`, `Secret_${env.valueFrom.secretKeyRef.name}`, 'references')
             }
           }
+
+          if (this.options.nodes) {
+            let node = (this.apiData.nodes || []).find(n => n.metadata.name == pod.spec.nodeName);
+
+            this.addNode(node, 'Node')
+            this.addLink(`Pod_${pod.metadata.name}`, `Node_${node.metadata.name}`, 'references')
+          }
         }
 
         // Add PVCs linked to Pod
@@ -602,9 +609,10 @@ export default {
           StorageClass:             'sc',
           Endpoints:                'ep',
           ServiceAccount:           'sa',
+          Node:                     'node',
         }
 
-        const icon = icons[type] ? icons[type] : 'default';
+        let icon = icons[type] ? icons[type] : 'default';
 
         // Trim long names for labels, and get pod's hashed generated name suffix
         let label = node.metadata.name.substr(0, 24)
@@ -615,8 +623,12 @@ export default {
         if (type == "Pod") {
           let podName = node.metadata.name.replace(node.metadata.generateName, '')
           label = podName || node.status.podIP || ""
+        } else if (type == "Node") {
+          if (node.metadata.labels["node-role.kubernetes.io/master"] !== undefined) {
+            icon = 'master'
+          }
         }
-
+        
         //console.log(`### Adding: ${type} -> ${node.metadata.name || node.metadata.selfLink}`);
         cy.add({
           data: {

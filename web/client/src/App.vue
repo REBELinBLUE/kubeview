@@ -68,6 +68,7 @@
         </b-form-group>
 
         <b-form-group label="Miscellaneous">
+          <b-form-checkbox v-model="options.nodes" name="nodes"> Show Nodes</b-form-checkbox>
           <b-form-checkbox v-model="options.serviceaccounts" name="sa"> Show ServiceAccounts</b-form-checkbox>
         </b-form-group>
       </b-form>
@@ -111,6 +112,7 @@ export default {
         persistentvolumeclaims: true,
         persistentvolumes: false,
         storageclasses: false,
+        nodes: false,
         loadbalancers: true,
       }
     }

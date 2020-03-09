@@ -94,6 +94,7 @@ type scrapeData struct {
 	Secrets                []apiv1.Secret                `json:"secrets"`
 	StorageClasses         []storagev1.StorageClass      `json:"storageclasses"`
 	ServiceAccounts        []apiv1.ServiceAccount        `json:"serviceaccounts"`
+	Nodes                  []apiv1.Node                  `json:"nodes"`
 }
 
 // GetNamespaces - Return list of all namespaces in cluster
@@ -208,6 +209,11 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
+	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		klog.Warningf("### Kubernetes API error - %s", err.Error())
+	}
+
 	scrapeResult := scrapeData{
 		Pods:                   pods.Items,
 		Services:               services.Items,
@@ -223,6 +229,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		Secrets:                secrets.Items,
 		StorageClasses:         storageclasses.Items,
 		ServiceAccounts:        serviceaccounts.Items,
+		Nodes:                  nodes.Items,
 	}
 
 	scrapeResultJSON, _ := json.Marshal(scrapeResult)
