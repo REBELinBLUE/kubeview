@@ -35,7 +35,7 @@ export default {
     'loading': Loading
   },
 
-  props: [ 'namespace', 'filter', 'autoRefresh', 'rootType', 'options' ],
+  props: [ 'namespace', 'filter', 'autoRefresh', 'rootType', 'options', 'displayMode' ],
 
   data() {
     return {
@@ -267,7 +267,7 @@ export default {
     //
     addSet(type, kubeObjs) {
       for (let obj of kubeObjs) {
-        if (!this.filterShowNode(obj)) {
+        if (!this.filterShowNode(obj, type)) {
           continue
         }
 
@@ -305,7 +305,7 @@ export default {
     refreshNodes() {
       // Add deployments
       for (let deploy of this.apiData.deployments || []) {
-        if (!this.filterShowNode(deploy)) {
+        if (!this.filterShowNode(deploy, 'Deployment')) {
           continue
         }
 
@@ -319,7 +319,7 @@ export default {
 
       // Add pods
       for (let pod of this.apiData.pods || []) {
-        if (!this.filterShowNode(pod)) {
+        if (!this.filterShowNode(pod, 'Pod')) {
           continue
         }
 
@@ -392,7 +392,7 @@ export default {
             }
           }
 
-          if (this.options.nodes) {
+          if (this.displayMode == 1) {
             let node = (this.apiData.nodes || []).find(n => n.metadata.name == pod.spec.nodeName);
 
             this.addNode(node, 'Node')
@@ -478,7 +478,7 @@ export default {
       // Find all services and endpoints
       if (this.options.services) {
         for (let svc of this.apiData.services || []) {
-          if (!this.filterShowNode(svc)) {
+          if (!this.filterShowNode(svc, 'Service')) {
             continue
           }
 
@@ -523,7 +523,7 @@ export default {
         // Add Ingresses and link to Services
         if (this.options.ingresses) {
           for (let ingress of this.apiData.ingresses || []) {
-            if (!this.filterShowNode(ingress)) {
+            if (!this.filterShowNode(ingress, 'Ingress')) {
               continue
             }
 
@@ -582,7 +582,7 @@ export default {
       // Use breadthfirst with Deployments or DaemonSets or StatefulSets at the root
       cy.layout({
         name: 'breadthfirst',
-        roots: cy.nodes(`[type="Deployment"],[type="DaemonSet"],[type="StatefulSet"]`),
+        roots: cy.nodes(this.displayMode != 1 ? `[type = "Deployment"],[type = "DaemonSet"],[type = "StatefulSet"]` : `[type = "Node"]`),
         nodeDimensionsIncludeLabels: true,
         spacingFactor: 1
       }).run()
@@ -699,7 +699,18 @@ export default {
     //
     // Filter out nodes, called before adding/processing them
     //
-    filterShowNode(node) {
+    filterShowNode(node, type) {
+      // if (this.displayMode == 1 && (type == "Pod" || type == "Node" || type == "Ingress" || type == "Service")) {
+      //   return true
+      // } else if (this.displayMode == 1) {
+      //   return false
+      // }
+
+      // if( this.displayMode == 0 && type == "Node") {
+      //   return false
+      // }
+      console.log(type)
+
       if (!this.filter || this.filter.length <= 0) {
         return true
       }

@@ -34,6 +34,13 @@
             <b-dropdown-item @click="autoRefresh=60">60 secs</b-dropdown-item>
           </b-dropdown>
         </b-navbar-nav>
+
+        <b-navbar-nav>
+           <b-dropdown split :text="displayModeText" split-variant="light" variant="info">
+             <b-dropdown-item @click="displayMode=0">Workloads</b-dropdown-item>
+             <b-dropdown-item @click="displayMode=1">Nodes</b-dropdown-item>
+           </b-dropdown>
+         </b-navbar-nav>    
       </b-collapse>
 
       <b-navbar-nav class="ml-auto">
@@ -42,7 +49,7 @@
       </b-navbar-nav>
     </b-navbar>
 
-    <viewer :options="options" :namespace="namespace" :filter="filter" :autoRefresh="autoRefresh" ref="viewer" />
+    <viewer :options="options" :namespace="namespace" :filter="filter" :autoRefresh="autoRefresh" :displayMode="displayMode" ref="viewer" />
 
     <help />
 
@@ -68,7 +75,6 @@
         </b-form-group>
 
         <b-form-group label="Miscellaneous">
-          <b-form-checkbox v-model="options.nodes" name="nodes"> Show Nodes</b-form-checkbox>
           <b-form-checkbox v-model="options.serviceaccounts" name="sa"> Show ServiceAccounts</b-form-checkbox>
         </b-form-group>
       </b-form>
@@ -92,6 +98,10 @@ export default {
   computed: {
     autoRefreshText() {
       return this.autoRefresh ? `Auto Refresh: ${this.autoRefresh} secs` : "Auto Refresh: Off"
+    },
+    displayModeText() {
+      let mode = ['Workloads', 'Nodes']
+      return `Top Level: ${mode[this.displayMode]}`
     }
   },
 
@@ -102,6 +112,7 @@ export default {
       filter: "",
       version: require('../package.json').version,
       autoRefresh: 0,
+      displayMode: 0,
       options: {
         services: true,
         ingresses: true,
@@ -112,7 +123,6 @@ export default {
         persistentvolumeclaims: true,
         persistentvolumes: false,
         storageclasses: false,
-        nodes: false,
         loadbalancers: true,
       }
     }
@@ -149,6 +159,9 @@ export default {
 
         this.namespace = defaultNs
       })
+
+    this.displayMode = 0
+    this.autoRefresh = 0
   }
 }
 </script>
