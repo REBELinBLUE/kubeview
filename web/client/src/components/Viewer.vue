@@ -628,7 +628,7 @@ export default {
             icon = 'master'
           }
         }
-        
+
         //console.log(`### Adding: ${type} -> ${node.metadata.name || node.metadata.selfLink}`);
         cy.add({
           data: {
@@ -712,6 +712,10 @@ export default {
       console.log(type)
 
       if (!this.filter || this.filter.length <= 0) {
+        return true
+      }
+
+      if (node.spec.nodeName && node.spec.nodeName.includes(this.filter)) {
         return true
       }
 
