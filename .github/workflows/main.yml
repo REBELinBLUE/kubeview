@@ -8,7 +8,7 @@ on:
 
 env:
   dockerUser: rebelinblue
-  imageName: kubeview-x86
+  imageName: kubeview
   imageTag: latest
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
     - uses: actions/checkout@v1
 
     - name: Build the Docker image
-      run: docker build . --file ./build/Dockerfile --build-arg version="${{ github.event.release.tag_name }}" --build-arg buildInfo="GitHub release build dated:$(date -I)" --tag ${{ env.dockerUser }}/${{ env.imageName }}:dev
+      run: docker build . --file ./build/Dockerfile --build-arg version="${{ github.event.release.tag_name }}" --build-arg buildInfo="GitHub release build dated:$(date -I)" --tag ${{ env.dockerUser }}/${{ env.imageName }}:${{ env.imageTag }}
 
 #    - name: Login to Dockerhub
 #      run: docker login -u $dockerUser -p ${{ secrets.dockerPassword }}
