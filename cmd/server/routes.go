@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"k8s.io/klog"
@@ -214,6 +215,23 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
+	// Remove and hide Helm v3 release secrets, we're never going to show them
+	secrets.Items = filterSecrets(secrets.Items, func(v apiv1.Secret) bool {
+		return !strings.HasPrefix(v.ObjectMeta.Name, "sh.helm.release")
+	})
+
+	// Obfuscate & remove secret values
+	for _, secret := range secrets.Items {
+		// Inside 'last-applied-configuration'
+		if secret.ObjectMeta.Annotations["kubectl.kubernetes.io/last-applied-configuration"] != "" {
+			secret.ObjectMeta.Annotations["kubectl.kubernetes.io/last-applied-configuration"] = "__VALUE REDACTED__"
+		}
+
+		for key := range secret.Data {
+			secret.Data[key] = []byte("__VALUE REDACTED__")
+		}
+	}
+
 	scrapeResult := scrapeData{
 		Pods:                   pods.Items,
 		Services:               services.Items,
@@ -238,4 +256,19 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	w.Write([]byte(scrapeResultJSON))
+}
+
+//
+// Filter a slice of Secrets
+//
+func filterSecrets(secretList []apiv1.Secret, f func(apiv1.Secret) bool) []apiv1.Secret {
+	newSlice := make([]apiv1.Secret, 0)
+
+	for _, secret := range secretList {
+		if f(secret) {
+			newSlice = append(newSlice, secret)
+		}
+	}
+
+	return newSlice
 }

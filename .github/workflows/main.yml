@@ -1,26 +1,26 @@
 name: Build Dockerhub Image
 
-on: 
-  push: 
+on:
+  push:
     branches: [master]
   pull_request:
     branches: [master]
-    
+
 env:
   dockerUser: rebelinblue
   imageName: kubeview-x86
   imageTag: latest
-  
+
 jobs:
   buildJob:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v1
-      
+
     - name: Build the Docker image
-      run: docker build . --file ./build/Dockerfile --tag $dockerUser/$imageName:$imageTag
-    
+      run: docker build . --file ./build/Dockerfile --build-arg version="${{ github.event.release.tag_name }}" --build-arg buildInfo="GitHub release build dated:$(date -I)" --tag ${{ env.dockerUser }}/${{ env.imageName }}:${{ github.event.release.tag_name }}
+
 #    - name: Login to Dockerhub
 #      run: docker login -u $dockerUser -p ${{ secrets.dockerPassword }}
 #

@@ -71,6 +71,15 @@
         </ul>
       </div>
 
+      <div v-if="objectData">
+        <h5>Data</h5>
+        <ul>
+          <div v-for="(data, index) of objectData" :key="`data_${index}`">
+            <li>{{ data }}</li>
+          </div>
+        </ul>
+      </div>   
+
       <p v-if="!kubeResource">This represents the real physical Load Balancer rather than a Kubernetes resource</p>
 
       <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
@@ -161,6 +170,15 @@ export default {
       }
 
       return annoCopy
+    },
+
+    objectData() {
+      if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'data')) {
+        return false
+      }
+      
+      let dataKeys = Object.keys(this.nodeData.sourceObj.data)
+      return dataKeys
     },
 
     specContainers() {

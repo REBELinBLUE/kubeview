@@ -31,6 +31,10 @@ export default {
     apiGetNamespaces() {
       return fetch(`${API_ENDPOINT}/namespaces`)
         .then(resp => {
+          if (!resp.ok) {
+            throw Error(resp.statusText);
+          }
+          
           return resp.json();
         })
         .then(namespaces => {

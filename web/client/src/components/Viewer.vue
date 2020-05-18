@@ -79,20 +79,14 @@ export default {
       let sourceCopy = {}
       Object.assign(sourceCopy, this.infoBoxData.sourceObj);
 
-      // FIXME: This is a bad way to do it and should be done on the API level
-      if (sourceCopy.type) {
-        if (sourceCopy.type == "kubernetes.io/tls") {
-          sourceCopy.data['tls.key'] = '<REDACTED>'
-        } else if (sourceCopy.type == "Opaque") { // FIXME: Think of a better way to do this
-          if (sourceCopy.data.role_id) {
-            sourceCopy.data.role_id = '<REDACTED>'
-          }
+      console.log(sourceCopy)
 
-          if (sourceCopy.data.secret_id) {
-            sourceCopy.data.secret_id = '<REDACTED>'
-          }
+      // FIXME: There has to be a better way to do this
+      if (this.infoBoxData.type.toLowerCase() == 'secret') {
+        for (let key in sourceCopy.data) { 
+          sourceCopy.data[key] = '<REDACTED>'
         }
-      }
+      } 
 
       if (sourceCopy.metadata.annotations) {
         delete sourceCopy.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']
@@ -289,7 +283,7 @@ export default {
         // Find all owning deployments of this set (if any)
         for (let ownerRef of obj.metadata.ownerReferences || []) {
           // Skip owners that aren't deployments (like operators and custom objects)
-          if (ownerRef.kind.toLowerCase() !== 'deployment') {
+          if (ownerRef.kind && ownerRef.kind.toLowerCase() !== 'deployment') {
             continue;
           }
 
