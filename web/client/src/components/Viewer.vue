@@ -6,10 +6,15 @@
 
     <transition name="slide-fade">
       <infobox v-if="infoBoxData" :nodeData="infoBoxData" @hideInfoBox="infoBoxData = null" @fullInfo="showFullInfo"></infobox>
+      <infobox v-if="logData" :nodeData="logData" @hideInfoBox="logData = null" @fullInfo="showLog"></infobox>
     </transition>
 
     <b-modal centered :title="fullInfoTitle" ref="fullInfoModal" ok-only scrollable size="lg" body-class="fullInfoBody">
       <pre>{{ fullInfoYaml }}</pre>
+    </b-modal>
+
+    <b-modal centered :title="fullLogTitle" ref="logModal" ok-only scrollable size="lg" body-class="logBody">
+      <pre>{{ fullLogData }}</pre>
     </b-modal>
   </div>
 </template>
@@ -41,8 +46,11 @@ export default {
     return {
       apiData: null,
       infoBoxData: null,
+      logData: null,
       fullInfoYaml: null,
+      fullLogData: null,
       fullInfoTitle: "",
+      fullLogTitle: "",
       loading: false,
     }
   },
@@ -72,6 +80,13 @@ export default {
   },
 
   methods: {
+    showLog() {
+      this.fullLogData = 'this is the log'
+      this.fullLogTitle = `log title`
+
+      this.$refs.logModal.show()
+    },
+
     //
     // Display the detail info dialog with YAML version of the selected object
     //

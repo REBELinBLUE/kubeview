@@ -78,11 +78,13 @@
             <li>{{ data }}</li>
           </div>
         </ul>
-      </div>   
+      </div>
 
       <p v-if="!kubeResource">This represents the real physical Load Balancer rather than a Kubernetes resource</p>
 
       <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
+
+      <b-button v-if="pod"  @click="$emit('viewLog', nodeData)" variant="info">View Logs</b-button>
     </b-card>
   </div>
 </template>
@@ -99,6 +101,10 @@ export default {
     kubeResource() {
       // Do not show the button for LoadBalancer as it is not a kubernetes resource
       return this.nodeData.type != 'LoadBalancer';
+    },
+
+    pod() {
+      return this.nodeData.type === 'Pod';
     },
 
     metadata() {
@@ -176,7 +182,7 @@ export default {
       if (!this.utilsCheckNested(this.nodeData, 'sourceObj', 'data')) {
         return false
       }
-      
+
       let dataKeys = Object.keys(this.nodeData.sourceObj.data)
       return dataKeys
     },
