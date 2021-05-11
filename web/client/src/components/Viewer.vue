@@ -83,10 +83,10 @@ export default {
 
       // FIXME: There has to be a better way to do this
       if (this.infoBoxData.type.toLowerCase() == 'secret') {
-        for (let key in sourceCopy.data) { 
+        for (let key in sourceCopy.data) {
           sourceCopy.data[key] = '<REDACTED>'
         }
-      } 
+      }
 
       if (sourceCopy.metadata.annotations) {
         delete sourceCopy.metadata.annotations['kubectl.kubernetes.io/last-applied-configuration']
@@ -622,7 +622,7 @@ export default {
             icon = 'master'
           }
         }
-        
+
         //console.log(`### Adding: ${type} -> ${node.metadata.name || node.metadata.selfLink}`);
         cy.add({
           data: {
@@ -731,7 +731,7 @@ export default {
 
     // Styling cytoscape to look good, stylesheets are held as JSON external
     cy.style().selector('node[icon]').style(require('../assets/styles/node.json'));
-    cy.style().selector('node[icon]').style("background-image", ele => ele.data('status') ? `img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `img/res/${ele.data('icon')}.svg`)
+    cy.style().selector('node[icon]').style("background-image", ele => ele.data('status') ? `/img/res/${ele.data('icon')}-${ele.data('status')}.svg` : `/img/res/${ele.data('icon')}.svg`)
     cy.style().selector('.grp').style(require('../assets/styles/grp.json'));
     cy.style().selector('edge[direction="references"]').style(require('../assets/styles/references.json'));
     cy.style().selector('edge[direction="creates"]').style(require('../assets/styles/creates.json'));

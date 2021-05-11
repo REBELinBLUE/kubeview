@@ -22,7 +22,7 @@ RUN npm run build
 # ================================================================================================
 # === Stage 2: Build Golang API server and host for Vue app ======================================
 # ================================================================================================
-FROM golang:1.12-alpine as go-build
+FROM golang:1.16-alpine as go-build
 WORKDIR /build
 ARG goPackage="github.com/rebelinblue/kubeview/cmd/server"
 ARG version="0.1.13"

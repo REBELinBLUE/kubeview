@@ -82,6 +82,7 @@ func main() {
 	router.HandleFunc("/api/status", routeStatus)
 	router.HandleFunc("/api/namespaces", routeGetNamespaces)
 	router.HandleFunc("/api/scrape/{ns}", routeScrapeData)
+	router.HandleFunc("/api/scrape/{ns}/pods/{pod}/log", routePodLog)
 
 	staticDirectory := envhelper.GetEnvString("STATIC_DIR", "./frontend")
 	fileServer := http.FileServer(http.Dir(staticDirectory))

@@ -6,7 +6,10 @@ package main
 //
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"runtime"
@@ -100,7 +103,8 @@ type scrapeData struct {
 
 // GetNamespaces - Return list of all namespaces in cluster
 func routeGetNamespaces(w http.ResponseWriter, r *http.Request) {
-	namespaces, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+	ctx := context.Background()
+	namespaces, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -119,12 +123,15 @@ func routeGetNamespaces(w http.ResponseWriter, r *http.Request) {
 // ScrapeData - Return aggregated data from loads of different Kubernetes object types
 func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	klog.SetOutput(os.Stdout)
+
+	ctx := context.Background()
+
 	params := mux.Vars(r)
 	namespace := params["ns"]
 
 	// If deployments, daemonsets, replicasets, statefulsets or pods can't be listed there is not much point continuing
 
-	deployments, err := clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -132,7 +139,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	daemonsets, err := clientset.AppsV1().DaemonSets(namespace).List(metav1.ListOptions{})
+	daemonsets, err := clientset.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -140,7 +147,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	replicasets, err := clientset.AppsV1().ReplicaSets(namespace).List(metav1.ListOptions{})
+	replicasets, err := clientset.AppsV1().ReplicaSets(namespace).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -148,7 +155,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+	statefulsets, err := clientset.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -156,7 +163,7 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 
 	if err != nil {
 		klog.Errorf("### Kubernetes API error - %s", err.Error())
@@ -165,52 +172,52 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If the remaining resource types can't be listed it doesn't matter, handle it on the frontend
-	services, err := clientset.CoreV1().Services(namespace).List(metav1.ListOptions{})
+	services, err := clientset.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	endpoints, err := clientset.CoreV1().Endpoints(namespace).List(metav1.ListOptions{})
+	endpoints, err := clientset.CoreV1().Endpoints(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	pvs, err := clientset.CoreV1().PersistentVolumes().List(metav1.ListOptions{})
+	pvs, err := clientset.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(metav1.ListOptions{})
+	pvcs, err := clientset.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	configmaps, err := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{})
+	configmaps, err := clientset.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	secrets, err := clientset.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+	secrets, err := clientset.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
+	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	storageclasses, err := clientset.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	storageclasses, err := clientset.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	serviceaccounts, err := clientset.CoreV1().ServiceAccounts(namespace).List(metav1.ListOptions{})
+	serviceaccounts, err := clientset.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+	nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
@@ -256,6 +263,39 @@ func routeScrapeData(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	w.Write([]byte(scrapeResultJSON))
+}
+
+func routePodLog(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	params := mux.Vars(r)
+	namespace := params["ns"]
+	pod := params["pod"]
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Add("Content-Type", "application/json")
+
+	req := clientset.CoreV1().Pods(namespace).GetLogs(pod, &apiv1.PodLogOptions{
+		Container:  "api-stl",
+		Follow:     false,
+		Previous:   false,
+		Timestamps: false,
+	})
+	logs, err := req.Stream(ctx)
+	if err != nil {
+		klog.Warningf("### Kubernetes API error - %s", err.Error())
+	}
+
+	defer logs.Close()
+
+	result, err := ioutil.ReadAll(logs)
+	if err != nil {
+		klog.Warningf("### Kubernetes API error - %s", err.Error())
+	}
+
+	klog.Infof("%s", string(result))
+
+	w.Write([]byte(fmt.Sprintf("ns %s pod %s", namespace, pod)))
 }
 
 //
