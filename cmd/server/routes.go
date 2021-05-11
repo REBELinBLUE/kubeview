@@ -8,7 +8,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -271,16 +270,28 @@ func routePodLog(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	namespace := params["ns"]
 	pod := params["pod"]
+	container := params["container"]
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Add("Content-Type", "application/json")
 
-	req := clientset.CoreV1().Pods(namespace).GetLogs(pod, &apiv1.PodLogOptions{
-		Container:  "api-stl",
+	var lineReadLimit int64 = 5000
+	//var byteReadLimit int64 = 500000
+
+	logOptions := &apiv1.PodLogOptions{
+		Container:  container,
 		Follow:     false,
 		Previous:   false,
 		Timestamps: false,
-	})
+	}
+
+	//if logSelector.LogFilePosition == logs.Beginning {
+	//logOptions.LimitBytes = &byteReadLimit
+	//} else {
+	logOptions.TailLines = &lineReadLimit
+	//}
+
+	req := clientset.CoreV1().Pods(namespace).GetLogs(pod, logOptions)
 	logs, err := req.Stream(ctx)
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
@@ -293,9 +304,7 @@ func routePodLog(w http.ResponseWriter, r *http.Request) {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
 	}
 
-	klog.Infof("%s", string(result))
-
-	w.Write([]byte(fmt.Sprintf("ns %s pod %s", namespace, pod)))
+	w.Write([]byte(string(result)))
 }
 
 //
