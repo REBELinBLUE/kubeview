@@ -13,13 +13,11 @@
     </b-modal>
 
     <b-modal centered :title="fullLogTitle" ref="logModal" ok-only scrollable size="xl" body-class="logBody">
-
       <pre>{{ fullLogData }}</pre>
-
 
       <template #modal-footer>
         <div class="w-100">
-          <div class="float-left" v-if="specContainers">
+          <div class="float-left" v-if="showContainers">
             Container:
             <select @change="changeContainer">
               <option v-for="container of specContainers" :key="container.name">{{container.name}}</option>
@@ -104,14 +102,15 @@ export default {
       Object.assign(sourceCopy, this.infoBoxData.sourceObj);
 
       this.fullLogTitle = `Pod: ${sourceCopy.metadata.name}`
-      this.specContainers = sourceCopy.spec.containers;
+      this.specContainers = sourceCopy.spec.containers
+
+      this.showContainers = this.specContainers.length > 1
 
       this.changeContainer({
         target: {
           value: sourceCopy.spec.containers[0].name
         }
       })
-
 
       this.$refs.logModal.show()
     },
