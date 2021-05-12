@@ -5,16 +5,30 @@
     <loading v-if="loading"></loading>
 
     <transition name="slide-fade">
-      <infobox v-if="infoBoxData" :nodeData="infoBoxData" @hideInfoBox="infoBoxData = null" @fullInfo="showFullInfo"></infobox>
-      <infobox v-if="logData" :nodeData="logData" @hideInfoBox="logData = null" @fullInfo="showLog"></infobox>
+      <infobox v-if="showInfoBox" :nodeData="infoBoxData" @hideInfoBox="hide" @fullInfo="showFullInfo" @viewLog="showLog"></infobox>
     </transition>
 
     <b-modal centered :title="fullInfoTitle" ref="fullInfoModal" ok-only scrollable size="lg" body-class="fullInfoBody">
       <pre>{{ fullInfoYaml }}</pre>
     </b-modal>
 
-    <b-modal centered :title="fullLogTitle" ref="logModal" ok-only scrollable size="lg" body-class="logBody">
+    <b-modal centered :title="fullLogTitle" ref="logModal" ok-only scrollable size="xl" body-class="logBody">
+
       <pre>{{ fullLogData }}</pre>
+
+
+      <template #modal-footer>
+        <div class="w-100">
+          <div class="float-left" v-if="specContainers">
+            Container:
+            <select @change="changeContainer">
+              <option v-for="container of specContainers" :key="container.name">{{container.name}}</option>
+            </select>
+          </div>
+
+          <b-button variant="primary" size="sm" class="float-right" @click="$refs.logModal.hide()">Close</b-button>
+        </div>
+      </template>
     </b-modal>
   </div>
 </template>
@@ -46,12 +60,13 @@ export default {
     return {
       apiData: null,
       infoBoxData: null,
-      logData: null,
+      showInfoBox: false,
       fullInfoYaml: null,
-      fullLogData: null,
       fullInfoTitle: "",
       fullLogTitle: "",
+      fullLogData: null,
       loading: false,
+      specContainers: false
     }
   },
 
@@ -80,17 +95,44 @@ export default {
   },
 
   methods: {
+    hide() {
+      this.showInfoBox = false;
+    },
+
     showLog() {
-      this.fullLogData = 'this is the log'
-      this.fullLogTitle = `log title`
+      let sourceCopy = {}
+      Object.assign(sourceCopy, this.infoBoxData.sourceObj);
+
+      this.fullLogTitle = `Pod: ${sourceCopy.metadata.name}`
+      this.specContainers = sourceCopy.spec.containers;
+
+      this.changeContainer({
+        target: {
+          value: sourceCopy.spec.containers[0].name
+        }
+      })
+
 
       this.$refs.logModal.show()
+    },
+
+    changeContainer(event) {
+      this
+        .apiGetLog(this.namespace, this.infoBoxData.sourceObj.metadata.name, event.target.value)
+        .then(newData => {
+          if (!newData) {
+            this.fullLogData = ""
+          }
+
+          this.fullLogData = newData
+        })
     },
 
     //
     // Display the detail info dialog with YAML version of the selected object
     //
     showFullInfo() {
+
       let sourceCopy = {}
       Object.assign(sourceCopy, this.infoBoxData.sourceObj);
 
@@ -156,6 +198,7 @@ export default {
             this.typeIndexes = []
             cy.remove("*")
             this.infoBoxData = false
+            this.showInfoBox = false  //fixme: Is there a better way to do this
             this.refreshNodes()
           }
 
@@ -769,6 +812,7 @@ export default {
         }
 
         this.infoBoxData = evt.target.data()
+        this.showInfoBox = true //fixme: Is there a better way to do this
       }
     })
 
@@ -776,6 +820,7 @@ export default {
     cy.on('click tap', evt => {
       if (!evt.target.length && this.infoBoxData) {
         this.infoBoxData = false;
+        this.showInfoBox = false //fixme: Is there a better way to do this
       }
     })
 
@@ -798,7 +843,7 @@ export default {
     box-shadow: inset 0 0 20px #000000;
   }
 
-  .fullInfoBody {
+  .fullInfoBody, .logBody {
     color: #28c8e4;
     background-color: #111;
   }

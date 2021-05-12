@@ -2,6 +2,32 @@ const API_ENDPOINT = process.env.VUE_APP_API_ENDPOINT
 
 export default {
   methods: {
+    apiGetLog(ns, pod, container) {
+      return fetch(`${API_ENDPOINT}/scrape/${ns}/pods/${pod}/log/${container}`)
+        .then(resp => {
+          if (resp.ok) {
+            return resp.text();
+          }
+
+          throw resp
+        })
+        .catch(err => {
+          // eslint-disable-next-line
+          if (err.status == 403) {
+            throw err
+          }
+
+          if (!err.text) {
+            console.error(err)
+            return
+          }
+
+          err.text().then(message => {
+            console.log(`### API Error! ${message}`);
+          })
+        })
+    },
+
     apiGetDataForNamespace(ns) {
       return fetch(`${API_ENDPOINT}/scrape/${ns}`)
         .then(resp => {
@@ -34,7 +60,7 @@ export default {
           if (!resp.ok) {
             throw Error(resp.statusText);
           }
-          
+
           return resp.json();
         })
         .then(namespaces => {

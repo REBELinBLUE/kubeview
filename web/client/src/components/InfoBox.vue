@@ -84,7 +84,7 @@
 
       <b-button v-if="kubeResource" @click="$emit('fullInfo', nodeData)" variant="info">Full Object Details</b-button>
 
-      <b-button v-if="pod"  @click="$emit('viewLog', nodeData)" variant="info">View Logs</b-button>
+      <b-button v-if="pod" @click="$emit('viewLog', nodeData)" variant="info">View Logs</b-button>
     </b-card>
   </div>
 </template>
