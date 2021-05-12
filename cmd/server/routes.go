@@ -295,6 +295,8 @@ func routePodLog(w http.ResponseWriter, r *http.Request) {
 	logs, err := req.Stream(ctx)
 	if err != nil {
 		klog.Warningf("### Kubernetes API error - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
 	}
 
 	defer logs.Close()
